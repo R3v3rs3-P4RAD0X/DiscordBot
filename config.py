@@ -12,6 +12,8 @@ def ReadKeyValStore(filename):
             if line[0] == '#':
                 continue
             key, value = line.split('=')
+            if key in keyval:
+                continue
             keyval[key.strip()] = value.strip()
     return keyval
 
