@@ -23,45 +23,32 @@ def GetDateTime():
 # A function that'll handle the finding of a command using Rust FD
 def SearchCommand(cmdstr):
     # Create the command for searching
-    command = [
-        'fd',
-        f"{cmdstr}.py",
-        'commands',
-    ]
+    command = ['fd', f"{cmdstr}.py", 'commands']
 
-    # Run the command
-    output = subprocess.run(command, capture_output=True)
+    # Run the command and get the output
+    output = subprocess.check_output(command, text=True).split('\n')[:-1]
 
-    # Check if the command was found
-    if output.returncode == 0:
-        # Get the output
-        output = output.stdout.decode('utf-8').split('\n')
-
-        # Remove the last item
-        output.pop()
-
-        # Return the output
-        return output[0]
-    
-    else:
-        # Return an empty list
-        return False
+    # Return the first item in the output
+    return output[0] if output else False
 
 # A function for handling the loading of a command
 def HandleCommand(searchstr):
-    # Search for the command
-    command = SearchCommand(searchstr)
-
-    # Check if the command was found
-    if command:
-        # Import the command and reload
-        command = importlib.import_module(command.replace('/', '.').replace('.py', ''))
-        command = importlib.reload(command)
-
-        # Check if the command has a class called searchstr.title()
-        if hasattr(command, searchstr.title()):
-            # Return the command
-            return getattr(command, searchstr.title())
+    if command := SearchCommand(searchstr):
+        return getattr(
+            # Reload the module
+            importlib.reload(
+                # Import the module
+                importlib.import_module(
+                    # Get the module name
+                    command.replace('/', '.')\
+                        .replace('.py', '')
+                    )
+                ), 
+                # Get the class name
+                searchstr.title(), 
+                # Return False if the class doesn't exist
+                False
+            )
 
     return False
 
