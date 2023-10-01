@@ -1,0 +1,10 @@
+# Secrets
+.env
+venv
+
+# Database related
+*.db*
+*.sql*
+
+# Remove cached files
+__pycache__/
