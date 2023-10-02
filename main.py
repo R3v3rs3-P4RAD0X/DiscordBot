@@ -1,9 +1,9 @@
 # DiscordBot
 import discord
 import rich
-import os
 import config
 import client
+import database
 
 
 class Main:
@@ -16,7 +16,18 @@ class Main:
         self.console = rich.get_console()
 
         # Initialise the database class
-        self.database = config.Database()
+        self.database = database.Database()
+        
+        # Load all the events
+        events = config.LoadEvents()
+
+        # Loop over the events
+        for event in events:
+            # Deconstruct the event
+            name, func = event
+
+            # Add the event to the client
+            setattr(client.Client, name, func)
 
         # Initialise the Discord client
         self.client = client.Client(

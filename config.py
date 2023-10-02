@@ -1,8 +1,9 @@
 # Imports
 import datetime
 import subprocess
-import sqlite3
 import importlib
+import command
+import asyncio
 
 # A function to read a key=value file and return the values as a dictionary
 def ReadKeyValStore(filename):
@@ -38,111 +39,125 @@ def ReadKeyValStore(filename):
 def GetDateTime():
     return datetime.datetime.now().strftime('%d-%b-%y %H:%M:%S')
 
-# A function that'll handle the finding of a command using Rust FD
-def SearchCommand(cmdstr):
-    # Create the command for searching
-    command = ['fd', f"{cmdstr}.py", 'commands']
+# A function for loading all the events from events
+def LoadEvents() -> [str]:
+    # Get all events from events directory
+    output = WalkDirectory('events', '.py')
+
+    # Events list
+    events = []
+
+    # Loop through the output
+    for file in output:
+        # Get the module of the file, reload the file
+        module = ImportReload(file)
+
+        # Get the name from file
+        name = file.split('.')[-1]
+
+        # Check if the module has the function
+        if hasattr(module, name):
+            # Get the function
+            func = getattr(module, name)
+
+            # Check if the function is a coroutine
+            if not asyncio.iscoroutinefunction(func):
+                # Raise an error if the function is not a coroutine
+                raise TypeError(f"Event '{name}' is not a coroutine")
+            
+            # Add the event to the events list
+            events.append((name, func))
+
+    # Return the events list
+    return events
+
+# A function for loading all the aliases from commands
+def LoadCommandAliases() -> [str]:
+    aliases = {}
+
+    # Get all the files in the commands directory
+    output = WalkDirectory('commands', '.py')
+
+    # Loop through the output
+    for file in output:
+        # Get the module of the file, reload the file
+        module = ImportReload(file)
+
+        # Get the name from file
+        name = file.split('.')[-1]
+
+        # Check if the module has the class
+        if hasattr(module, name.title()):
+            # Get the class
+            cls = getattr(module, name.title())
+
+            # Check if the class has the aliases attribute
+            if hasattr(cls, 'aliases'):
+                # Loop through the aliases
+                for alias in cls.aliases:
+                    # Add the alias to the aliases dictionary
+                    aliases[alias] = name
+
+    return aliases
+
+# A function for returning the paths of all files inside a directory
+def WalkDirectory(directory, file_ext, replace: bool = True) -> [str]:
+    # Construct the command
+    command = ['fd', file_ext, directory]
 
     # Run the command and get the output
     output = subprocess.check_output(command, text=True).split('\n')[:-1]
 
+    # If replace is True, replace the directory slashses with dots and remove the extension
+    if replace:
+        output = [file.replace('/', '.').replace(file_ext, '') for file in output]
+
+    # Return the output
+    return output
+
+# A function for searching a directory for a specific file
+def SearchDirectory(directory, file_ext, searchstr, replace: bool = True) -> str:
+    # Construct the command
+    command = ['fd', f"{searchstr}{file_ext}", directory]
+
+    # Run the command and get the output
+    output = subprocess.check_output(command, text=True).split('\n')[:-1]
+
+    # If replace is True, replace the directory slashses with dots and remove the extension
+    if replace:
+        output = [file.replace('/', '.').replace(file_ext, '') for file in output]
+
     # Return the first item in the output
     return output[0] if output else False
 
+# A function for importing and reloading a module
+def ImportReload(path, reload: bool = True):
+    # Get the module
+    module = importlib.import_module(path)
+
+    # If reload is True reload the module
+    if reload:
+        module = importlib.reload(module)
+
+    # Return the module
+    return module
+
+
 # A function for handling the loading of a command
-def HandleCommand(searchstr):
-    if command := SearchCommand(searchstr):
-        return getattr(
-            # Reload the module
-            importlib.reload(
-                # Import the module
-                importlib.import_module(
-                    # Get the module name
-                    command.replace('/', '.')\
-                        .replace('.py', '')
-                    )
-                ), 
-                # Get the class name
-                searchstr.title(), 
-                # Return False if the class doesn't exist
-                False
-            )
+def HandleCommand(searchstr: str) -> command.Command:
+    # Get the command
+    command = SearchDirectory('commands', '.py', searchstr)
 
-    return False
+    # Check if the command exists
+    if not command or len(command) == 0:
+        return False
 
-# A database class
-class Database:
-    cache = {
-        'guilds': {},
-        'users': {},
-    }
+    # Get the module of the command
+    module = ImportReload(command)
 
-    file = 'data/storage.db'
+    # Check if the module has searchstr.title() as attr
+    if not hasattr(module, searchstr.title()):
+        return False
 
-    def __init__(self):
-        self.conn = sqlite3.connect(self.file)
-        self.cursor = self.conn.cursor()
-
-    def __del__(self):
-        self.conn.close()
-
-    def check_cache(self, table, id) -> bool:
-        # Check if the table exists in the cache
-        if table not in self.cache:
-            return False
-        
-        # Check if the id exists in the cache
-        if id not in self.cache[table]:
-            return False
-        
-        # Check if the data is older than 5 minutes
-        if (datetime.datetime.now() - self.cache[table][id]['timestamp']).seconds > 300:
-            del self.cache[table][id]
-            return False
-        
-        # Return True if the data is in the cache and is less than 5 minutes old
-        return True
-    
-
-    def get_guild(self, guildID: int) -> dict:
-        # Check if the data is in the cache
-        if self.check_cache('guilds', guildID):
-            return self.cache['guilds'][guildID]['data']
-
-        # Execute the data/queries/guild_table.sql query
-        self.cursor.execute(open('data/queries/guild_table.sql', 'r').read())
-
-        # Check if data exists for the guildID
-        self.cursor.execute('SELECT * FROM guilds WHERE guildID=?', (guildID,))
-
-        # Fetch the data
-        data = self.cursor.fetchone()
-
-        # Check if the data exists
-        if data is None:
-            # Data doesn't exist, so insert a new entry
-            self.cursor.execute('INSERT INTO guilds (guildID, prefix) VALUES (?, ?)',
-                                (guildID, 's!'))
-            self.conn.commit()
-
-            # Fetch the data (whether it was existing or newly created)
-            self.cursor.execute('SELECT * FROM guilds WHERE guildID=?', (guildID,))
-
-            # Fetch the data
-            data = self.cursor.fetchone()
-
-        # Convert the data to a dictionary
-        data = {
-            'id': data[0],
-            'guildID': data[1],
-            'prefix': data[2],
-        }
-
-        # Add the data to the cache
-        self.cache['guilds'][guildID] = {
-            'data': data,
-            'timestamp': datetime.datetime.now()
-        }
-
-        # Return the data
-        return data
+    # Return the class
+    return getattr(module, searchstr.title())
