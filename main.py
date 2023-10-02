@@ -9,8 +9,11 @@ import database
 class Main:
     # Constructor
     def __init__(self):
+        # Initialise the config class
+        self.config = config.Config()
+
         # Load the .env file
-        self.env = config.ReadKeyValStore('.env')
+        self.env = self.config.HandleKeyValStore('.env')
 
         # Initialise the Rich console
         self.console = rich.get_console()
@@ -18,8 +21,8 @@ class Main:
         # Initialise the database class
         self.database = database.Database()
         
-        # Load all the events
-        events = config.LoadEvents()
+        # Get the events
+        events = self.config.HandleEvents()
 
         # Loop over the events
         for event in events:
@@ -33,7 +36,7 @@ class Main:
         self.client = client.Client(
             intents=discord.Intents.all(), 
             console=self.console,
-            config=config,
+            config=self.config,
             database=self.database
         )
 
