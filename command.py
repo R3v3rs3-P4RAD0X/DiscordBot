@@ -3,7 +3,6 @@ import client
 
 class Command:
     # Help information
-    name = None
     desc = "No description provided."
     usage = None
     aliases = []
@@ -11,6 +10,8 @@ class Command:
     # Toggles
     dev = False
     nsfw = False
+    hidden = False
+    disabled = False
 
     # Permissions
     perms = {
@@ -31,14 +32,23 @@ class Command:
         if self.dev and self.message.author.id not in self.client.devs:
             return False
         
+        if self.nsfw and not self.message.channel.is_nsfw():
+            return False
+        
+        if self.disabled:
+            return False
+        
         return other > self.perms['required']
     
     # A function for return help information
     def help(self):
+        name = self.__class__.__name__
+        usage = self.usage if self.usage != None else f"{self.guildConfig['prefix']}{name}"
+
         return {
-            "name": self.name if self.name != None else self.__class__.__name__,
+            "name": name,
             "desc": self.desc,
-            "usage": self.usage if self.usage != None else f"{self.guildConfig['prefix']}{self.name}",
+            "usage": usage,
             "aliases": self.aliases
         }
 
