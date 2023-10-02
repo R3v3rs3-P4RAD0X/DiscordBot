@@ -1,6 +1,17 @@
 from command import Command
+import datetime
 
 class Ping(Command):
     async def run(self):
-        # Send a message to the channel
-        await self.message.channel.send('Pong!')
+        # Check if the bot has permission to embed links
+        if self.perms['bot'].embed_links:
+            # Send an embed
+            await self.SendEmbed(embed=self.embed(
+                title="Pong! 🏓", 
+                colour=(255, 255, 0)
+            ))
+            return
+        
+        # Send a message
+        await self.SendMessage("Pong! 🏓")
+        

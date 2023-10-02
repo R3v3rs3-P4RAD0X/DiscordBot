@@ -33,15 +33,15 @@ class TestReadKeyValStore(unittest.TestCase):
             result = ReadKeyValStore('test.txt')
             self.assertEqual(result, {'key': ''})
 
-    # def test_no_key(self):
-    #     with patch('builtins.open', mock_open(read_data='=value\n')) as mock_file:
-    #         with self.assertRaises(ValueError):
-    #             ReadKeyValStore('test.txt')
+    def test_no_key(self):
+        with patch('builtins.open', mock_open(read_data='=value\n')) as mock_file:
+            with self.assertRaises(ValueError):
+                ReadKeyValStore('test.txt')
 
-    # def test_duplicate_key(self):
-    #     with patch('builtins.open', mock_open(read_data='key=value1\nkey=value2\n')) as mock_file:
-    #         with self.assertRaises(ValueError):
-    #             ReadKeyValStore('test.txt')
+    def test_duplicate_key(self):
+        with patch('builtins.open', mock_open(read_data='key=value1\nkey=value2\n')) as mock_file:
+            with self.assertRaises(ValueError):
+                ReadKeyValStore('test.txt')
 
 if __name__ == '__main__':
     unittest.main()

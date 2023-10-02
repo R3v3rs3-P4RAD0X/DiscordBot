@@ -34,7 +34,7 @@ class Main:
 # Run the Main class
 if __name__ == '__main__':
     # Initialise the Main class
-    main = Main()
+    main = Main() 
 
     # Call the start method
     main.start()

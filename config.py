@@ -6,17 +6,33 @@ import importlib
 
 # A function to read a key=value file and return the values as a dictionary
 def ReadKeyValStore(filename):
+    # Create the dictionary
     keyval = {}
+
+    # Open the file
     with open(filename, 'r') as f:
+        # Loop through the lines, ignoring comments are keyless lines
         for line in f:
             if line[0] == '#':
                 continue
-            key, value = line.split('=')
-            if key in keyval:
-                continue
-            keyval[key.strip()] = value.strip()
-    return keyval
 
+            # If the line doesn't have a key, raise an error
+            if line.startswith('='):
+                raise ValueError(f"No key found in '{filename}'")
+
+            # Split the line into a key and value
+            key, value = line.split('=')
+
+            # Check if the key already exists
+            if key in keyval:
+                # Raise an error if the key already exists
+                raise ValueError(f"Duplicate key '{key}' found in '{filename}'")
+
+            # Add the key and value to the dictionary
+            keyval[key.strip()] = value.strip()
+
+    # Return the dictionary
+    return keyval
 
 # A function to get the current date and time in the format: 01-Jan-23 12:34:56
 def GetDateTime():

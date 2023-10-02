@@ -17,7 +17,7 @@ class Client(discord.Client):
         await self.change_presence(activity=discord.Game('Hello World!'))
 
     # Overwrite the on_message method
-    async def on_message(self, message):
+    async def on_message(self, message: discord.Message):
         # If the message is from a bot, ignore it
         if message.author.bot:
             return
@@ -39,6 +39,13 @@ class Client(discord.Client):
                     if run := getattr(command, 'run', False):
                         # Check if the run function is callable
                         if callable(run):
-                            # Run the command
-                            await run()
-                
+                            # Get member permissions
+                            member_permissions = message.channel.permissions_for(message.author)
+
+                            # Get the bot's permissions
+                            bot_permissions = message.channel.permissions_for(message.guild.me)
+
+                            # Check if the member and the bot has the required permissions
+                            if command.executable(member_permissions) and command.executable(bot_permissions):
+                                    # Run the command
+                                    await run()
