@@ -2,23 +2,46 @@ import discord
 import client
 
 class Command:
+    # Help information
+    name = None
+    desc = "No description provided."
+    usage = None
+    aliases = []
+
+    # Toggles
+    dev = False
+    nsfw = False
+
+    # Permissions
     perms = {
         "required": discord.Permissions(1 << 10 | 1 << 11)
     } 
 
-    def __init__(self, message: discord.Message, args: [str], client: client.Client):
+    def __init__(self, message: discord.Message, args: [str], client: client.Client, guildConfig):
         self.message = message
         self.args = args
         self.client = client
+        self.guildConfig = guildConfig
 
-        self.perms = {
-            "bot": self.message.channel.permissions_for(self.message.guild.me),
-            "user": self.message.channel.permissions_for(self.message.author)
-        }
+        self.perms['bot'] = self.message.channel.permissions_for(self.message.guild.me)
+        self.perms["user"] = self.message.channel.permissions_for(self.message.author)
+
 
     def executable(self, other: discord.Permissions):
-        return other > self.perms['required']
+        if self.dev and self.message.author.id not in self.client.devs:
+            return False
         
+        return other > self.perms['required']
+    
+    # A function for return help information
+    def help(self):
+        return {
+            "name": self.name if self.name != None else self.__class__.__name__,
+            "desc": self.desc,
+            "usage": self.usage if self.usage != None else f"{self.guildConfig['prefix']}{self.name}",
+            "aliases": self.aliases
+        }
+
     # A function for handling the sending of a message
     async def SendMessage(self, message):
         # Send the message
@@ -28,6 +51,11 @@ class Command:
         # Send the embed
         await self.message.channel.send(embed=embed)
 
+    # A default run method
+    async def run(self):
+        # Throw NotImplementedError
+        raise NotImplementedError('run method not implemented')
+    
     # A function for constructing an embed
     def embed(self, **kwargs):
         # Create the embed
