@@ -1,163 +1,209 @@
 # Imports
-import datetime
 import subprocess
 import importlib
 import command
 import asyncio
+import os
+from types import ModuleType
 
-# A function to read a key=value file and return the values as a dictionary
-def ReadKeyValStore(filename):
-    # Create the dictionary
-    keyval = {}
+class Config:
+    def __init__(self):
+        pass
 
-    # Open the file
-    with open(filename, 'r') as f:
-        # Loop through the lines, ignoring comments are keyless lines
-        for line in f:
-            if line[0] == '#':
-                continue
+    # Importing a module
+    def Import(self, path: str) -> ModuleType:
+        return importlib.import_module(path)
+    
+    # Reloading a module
+    def Reload(self, module: ModuleType) -> ModuleType:
+        return importlib.reload(module)
+    
+    # Finding a file in a directory
+    def Find(self, file: str, directory: str) -> str:
+        # Construct the command
+        command = ['fd', file, directory]
 
-            # If the line doesn't have a key, raise an error
-            if line.startswith('='):
-                raise ValueError(f"No key found in '{filename}'")
+        # Run the command and get the output
+        output = subprocess.check_output(command, text=True).split('\n')[:-1]
 
-            # Split the line into a key and value
-            key, value = line.split('=')
+        # Loop through the output and run HandlePath
+        output = [
+            self.HandlePath(path) for path in output
+        ]
 
-            # Check if the key already exists
-            if key in keyval:
-                # Raise an error if the key already exists
-                raise ValueError(f"Duplicate key '{key}' found in '{filename}'")
+        # Return the output
+        return output[0] if len(output) > 0 else False
+    
+    # Finding all files in a directory
+    def FindAll(self, ext: str, directory: str) -> list[str]:
+        # Construct the command
+        command = ['fd', ext, directory]
 
-            # Add the key and value to the dictionary
-            keyval[key.strip()] = value.strip()
+        # Run the command and get the output
+        output = subprocess.check_output(command, text=True).split('\n')[:-1]
 
-    # Return the dictionary
-    return keyval
+        # Loop through the output and run HandlePath
+        output = [
+            self.HandlePath(path) for path in output
+        ]
 
-# A function to get the current date and time in the format: 01-Jan-23 12:34:56
-def GetDateTime():
-    return datetime.datetime.now().strftime('%d-%b-%y %H:%M:%S')
+        # Return the output
+        return output if len(output) > 0 else False
+    
+    # Handling paths from strings
+    def HandlePath(self, path: str) -> str:
+        # Split by the dot and select first element
+        path = path.split('.')[0]
 
-# A function for loading all the events from events
-def LoadEvents() -> [str]:
-    # Get all events from events directory
-    output = WalkDirectory('events', '.py')
+        # Replace the slashes with dots
+        path = path.replace('/', '.')
 
-    # Events list
-    events = []
+        # Return the path
+        return path
 
-    # Loop through the output
-    for file in output:
-        # Get the module of the file, reload the file
-        module = ImportReload(file)
+        
+    
+    # Handling command finding and loading
+    def HandleCommand(self, searchstr: str) -> command.Command:
+        # Get the command
+        command = self.Find(searchstr + '.py', 'commands')
 
-        # Get the name from file
-        name = file.split('.')[-1]
+        # Check if the command exists
+        if not command or len(command) == 0:
+            return False
 
-        # Check if the module has the function
-        if hasattr(module, name):
-            # Get the function
-            func = getattr(module, name)
+        # Get the module of the command
+        module = self.Import(command)
 
-            # Check if the function is a coroutine
-            if not asyncio.iscoroutinefunction(func):
-                # Raise an error if the function is not a coroutine
-                raise TypeError(f"Event '{name}' is not a coroutine")
-            
-            # Add the event to the events list
-            events.append((name, func))
+        # Reload the module
+        module = self.Reload(module)
 
-    # Return the events list
-    return events
+        # Check if the module has searchstr.title() as attr
+        if not hasattr(module, searchstr.title()):
+            return False
 
-# A function for loading all the aliases from commands
-def LoadCommandAliases() -> [str]:
-    aliases = {}
+        # Return the class
+        return getattr(module, searchstr.title())
+    
+    # Handling command aliases
+    def HandleCommandAliases(self) -> dict[str, str]:
+        # Get all the files in the commands directory
+        output = self.FindAll('.py', 'commands')
 
-    # Get all the files in the commands directory
-    output = WalkDirectory('commands', '.py')
+        # Aliases dictionary
+        aliases = {}
 
-    # Loop through the output
-    for file in output:
-        # Get the module of the file, reload the file
-        module = ImportReload(file)
+        # Loop through the output
+        for file in output:
+            # Get the module of the file, reload the file
+            module = self.Import(file)
 
-        # Get the name from file
-        name = file.split('.')[-1]
+            # Get the name from file
+            name = file.split('.')[-1]
 
-        # Check if the module has the class
-        if hasattr(module, name.title()):
-            # Get the class
-            cls = getattr(module, name.title())
+            # Check if the module has the class
+            if hasattr(module, name.title()):
+                # Get the class
+                cls = getattr(module, name.title())
 
-            # Check if the class has the aliases attribute
-            if hasattr(cls, 'aliases'):
-                # Loop through the aliases
-                for alias in cls.aliases:
-                    # Add the alias to the aliases dictionary
-                    aliases[alias] = name
+                # Check if the class has the aliases attribute
+                if hasattr(cls, 'aliases'):
+                    # Loop through the aliases
+                    for alias in cls.aliases:
+                        # Add the alias to the aliases dictionary
+                        aliases[alias] = name
 
-    return aliases
+        # Return the aliases dictionary
+        return aliases
+    
+    # Handling event finding and loading
+    def HandleEvents(self) -> list[tuple[str, any]]:
+        # Get all events from events directory
+        output = self.FindAll('.py', 'events')
 
-# A function for returning the paths of all files inside a directory
-def WalkDirectory(directory, file_ext, replace: bool = True) -> [str]:
-    # Construct the command
-    command = ['fd', file_ext, directory]
+        # Events list
+        events = []
 
-    # Run the command and get the output
-    output = subprocess.check_output(command, text=True).split('\n')[:-1]
+        # Loop through the output
+        for file in output:
+            # Get the module of the file, reload the file
+            module = self.Import(file)
 
-    # If replace is True, replace the directory slashses with dots and remove the extension
-    if replace:
-        output = [file.replace('/', '.').replace(file_ext, '') for file in output]
+            # Get the name from file
+            name = file.split('.')[-1]
 
-    # Return the output
-    return output
+            # Check if the module has the function
+            if hasattr(module, name):
+                # Get the function
+                func = getattr(module, name)
 
-# A function for searching a directory for a specific file
-def SearchDirectory(directory, file_ext, searchstr, replace: bool = True) -> str:
-    # Construct the command
-    command = ['fd', f"{searchstr}{file_ext}", directory]
+                # Check if the function is a coroutine
+                if not asyncio.iscoroutinefunction(func):
+                    # Raise an error if the function is not a coroutine
+                    raise TypeError(f"Event '{name}' is not a coroutine")
+                
+                # Add the event to the events list
+                events.append((name, func))
 
-    # Run the command and get the output
-    output = subprocess.check_output(command, text=True).split('\n')[:-1]
+        # Return the events list
+        return events
+    
+    # Handles reading key=value files and returning the values as a dictionary
+    def HandleKeyValStore(self, filename: str) -> dict[str, str]:
+        # Create the dictionary
+        keyval = {}
 
-    # If replace is True, replace the directory slashses with dots and remove the extension
-    if replace:
-        output = [file.replace('/', '.').replace(file_ext, '') for file in output]
+        # Open the file
+        with open(filename, 'r') as f:
+            # Loop through the lines, ignoring comments are keyless lines
+            for line in f:
+                if line[0] == '#':
+                    continue
 
-    # Return the first item in the output
-    return output[0] if output else False
+                # If the line doesn't have a key, raise an error
+                if line.startswith('='):
+                    raise ValueError(f"No key found in '{filename}'")
 
-# A function for importing and reloading a module
-def ImportReload(path, reload: bool = True):
-    # Get the module
-    module = importlib.import_module(path)
+                # Split the line into a key and value
+                key, value = line.split('=')
 
-    # If reload is True reload the module
-    if reload:
-        module = importlib.reload(module)
+                # Check if the key already exists
+                if key in keyval:
+                    # Raise an error if the key already exists
+                    raise ValueError(f"Duplicate key '{key}' found in '{filename}'")
 
-    # Return the module
-    return module
+                # Add the key and value to the dictionary
+                keyval[key.strip()] = value.strip()
 
+        # Return the dictionary
+        return keyval
+    
+    # A levenstein distance function
+    def Similar(self, str1, str2):
+        len_str1 = len(str1)
+        len_str2 = len(str2)
 
-# A function for handling the loading of a command
-def HandleCommand(searchstr: str) -> command.Command:
-    # Get the command
-    command = SearchDirectory('commands', '.py', searchstr)
+        # Create a matrix to store distances
+        matrix = [[0] * (len_str2 + 1) for _ in range(len_str1 + 1)]
 
-    # Check if the command exists
-    if not command or len(command) == 0:
-        return False
+        # Initialize the matrix
+        for i in range(len_str1 + 1):
+            matrix[i][0] = i
+        for j in range(len_str2 + 1):
+            matrix[0][j] = j
 
-    # Get the module of the command
-    module = ImportReload(command)
+        # Fill in the matrix
+        for i in range(1, len_str1 + 1):
+            for j in range(1, len_str2 + 1):
+                cost = 0 if str1[i - 1] == str2[j - 1] else 1
+                matrix[i][j] = min(
+                    matrix[i - 1][j] + 1,  # Deletion
+                    matrix[i][j - 1] + 1,  # Insertion
+                    matrix[i - 1][j - 1] + cost  # Substitution
+                )
 
-    # Check if the module has searchstr.title() as attr
-    if not hasattr(module, searchstr.title()):
-        return False
+        # Calculate the similarity ratio
+        max_len = max(len_str1, len_str2)
+        similarity = (1 - (matrix[len_str1][len_str2] / max_len)) * 100
 
-    # Return the class
-    return getattr(module, searchstr.title())
+        return round(similarity, 2)

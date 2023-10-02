@@ -8,4 +8,4 @@ class Client(discord.Client):
         self.config = kwargs.get('config', None)
         self.database = kwargs.get('database', None)
 
-        self.aliases = self.config.LoadCommandAliases()
+        self.aliases = self.config.HandleCommandAliases()
