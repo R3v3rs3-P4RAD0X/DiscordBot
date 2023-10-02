@@ -1,0 +1,2 @@
+# DiscordBot
+Multipurpose Discord Bot
