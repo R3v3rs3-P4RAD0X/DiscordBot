@@ -43,7 +43,7 @@ class Command:
     # A function for return help information
     def help(self):
         name = self.__class__.__name__
-        usage = self.usage if self.usage != None else f"{self.guildConfig['prefix']}{name}"
+        usage = self.guildConfig['prefix'] + (self.usage if self.usage else name)
 
         return {
             "name": name,

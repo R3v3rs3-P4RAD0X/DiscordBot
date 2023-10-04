@@ -4,6 +4,7 @@ import importlib
 class Help(Command):
     aliases = ["h"]
     desc = "Shows help for all commands"
+    usage = "help [command]"
 
     # The run function
     async def run(self):
@@ -47,12 +48,13 @@ class Help(Command):
             value = "\n".join([
                 "Description: " + help['desc'],
                 "Usage: " + help['usage'],
+                "Aliases: " + ", ".join(help['aliases']),
                 f"{'NSFW ' if command.nsfw else ''}{'DISABLED' if command.disabled else ''}{'' if command.executable(self.perms['user']) else ' (Insufficient Permissions)'}",
             ])
 
             # Create a new field
             field = {
-                "name": f"{help['name']} ({', '.join(help['aliases'])})",
+                "name": f"{help['name']}",
                 "value": value,
                 "inline": False
             }
@@ -60,19 +62,6 @@ class Help(Command):
             # Add the field to the list
             fields.append(field)
 
-        # Check if the bot has permission to embed links
-        # if self.perms['bot'].embed_links:
-        #     # Send an embed
-        #     await self.SendEmbed(embed=self.embed(
-        #         title="**Command Help**",
-        #         colour=(255, 0, 255),
-        #         thumbnail=self.client.user.avatar.url,
-        #         fields=fields,
-        #         author=self.message.guild.me.display_name,
-        #         footer=f"Requested by {self.message.author.display_name}",
-        #     ))
-        #     return
-        
         # Send a message
         await self.SendMessage(
             "".join([
@@ -82,6 +71,10 @@ class Help(Command):
                     f"> {field['name']}\n{field['value']}\n"
                     for field in fields
                 ]),
+                "\n",
+                "<> = Required\n",
+                "[] = Optional\n",
+                "For command specfic help, use `help [command]` disabled\n"
                 "```"
             ])
         )

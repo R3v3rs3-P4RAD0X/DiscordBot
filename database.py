@@ -1,80 +1,42 @@
 # Imports
-import sqlite3
-import datetime
+import schema
 
-# A database class
-class Database:
-    cache = {
-        'guilds': {},
-        'users': {},
-    }
+# Define Schemas
+SchemaUser = schema.Schema("User")\
+    .add("UserID", int, True)\
+    .add("Economy", schema.Schema("Economy")\
+        .add("Balance", int, True, 0)\
+        .add("Bank", int, True, 0)\
+        .add("LastDaily", int, True, 0)\
+        .compose(), True, {})\
+    .add("Levelling", schema.Schema("Levelling")\
+         .add("XP", int, True, 0)\
+         .add("Level", int, True, 0)\
+         .compose(), True, {})\
+    .compose()
 
-    file = 'data/storage.db'
+SchemaGuild = schema.Schema("Guild")\
+    .add("GuildID", int, True)\
+    .add("Prefix", str, True, "s!")\
+    .add("Welcome", schema.Schema("Welcome")\
+        .add("Enabled", bool, True, False)\
+        .add("ChannelID", int, True)\
+        .add("Message", str, True, "Welcome {user} to {guild}!")\
+        .compose(), True, {})\
+    .add("Leave", schema.Schema("Leave")\
+        .add("Enabled", bool, True, False)\
+        .add("ChannelID", int, True)\
+        .add("Message", str, True, "Goodbye {user}!")\
+        .compose(), True, {})\
+    .add("Log", schema.Schema("Log")\
+        .add("Enabled", bool, True, False)\
+        .add("ChannelID", int, True)\
+        .compose(), True, {})\
+    .compose()
 
-    def __init__(self):
-        self.conn = sqlite3.connect(self.file)
-        self.cursor = self.conn.cursor()
 
-    def __del__(self):
-        self.conn.close()
-
-    def check_cache(self, table, id) -> bool:
-        # Check if the table exists in the cache
-        if table not in self.cache:
-            return False
-        
-        # Check if the id exists in the cache
-        if id not in self.cache[table]:
-            return False
-        
-        # Check if the data is older than 5 minutes
-        if (datetime.datetime.now() - self.cache[table][id]['timestamp']).seconds > 300:
-            del self.cache[table][id]
-            return False
-        
-        # Return True if the data is in the cache and is less than 5 minutes old
-        return True
-    
-
-    def get_guild(self, guildID: int) -> dict:
-        # Check if the data is in the cache
-        if self.check_cache('guilds', guildID):
-            return self.cache['guilds'][guildID]['data']
-
-        # Execute the data/queries/guild_table.sql query
-        self.cursor.execute(open('data/queries/guild_table.sql', 'r').read())
-
-        # Check if data exists for the guildID
-        self.cursor.execute('SELECT * FROM guilds WHERE guildID=?', (guildID,))
-
-        # Fetch the data
-        data = self.cursor.fetchone()
-
-        # Check if the data exists
-        if data is None:
-            # Data doesn't exist, so insert a new entry
-            self.cursor.execute('INSERT INTO guilds (guildID, prefix) VALUES (?, ?)',
-                                (guildID, 's!'))
-            self.conn.commit()
-
-            # Fetch the data (whether it was existing or newly created)
-            self.cursor.execute('SELECT * FROM guilds WHERE guildID=?', (guildID,))
-
-            # Fetch the data
-            data = self.cursor.fetchone()
-
-        # Convert the data to a dictionary
-        data = {
-            'id': data[0],
-            'guildID': data[1],
-            'prefix': data[2],
-        }
-
-        # Add the data to the cache
-        self.cache['guilds'][guildID] = {
-            'data': data,
-            'timestamp': datetime.datetime.now()
-        }
-
-        # Return the data
-        return data
+# If ran directly
+if __name__ == "__main__":
+    # Print the schemas
+    print(SchemaUser.new())
+    print(SchemaGuild.new())
