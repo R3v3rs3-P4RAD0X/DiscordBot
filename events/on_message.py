@@ -9,10 +9,13 @@ async def on_message(self: client.Client, message: discord.Message):
     # Check if the message was sent in a guild
     if message.guild:
         # Using self.config, get the config for the guild
-        config = self.database.GetGuild(message.guild.id)
+        # config = self.database.GetGuild(message.guild.id)
+        config = {
+            'prefix': 's!'
+        }
 
         # print config
-        print(config)
+        # print(config)
 
         # Check if the message starts with the prefix
         if message.content.startswith(config['prefix']):

@@ -8,3 +8,10 @@ venv
 
 # Remove cached files
 __pycache__/
+
+# Hide IDE specific files
+.vscode
+
+# Remove database
+./data/users/*
+./data/guilds/*

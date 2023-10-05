@@ -3,7 +3,7 @@ import discord
 import rich
 import config
 import client
-import database
+# import database
 
 
 class Main:
@@ -19,7 +19,7 @@ class Main:
         self.console = rich.get_console()
 
         # Initialise the database class
-        self.database = database.Database()
+        # self.database = database.Database()
         
         # Get the events
         events = self.config.HandleEvents()
@@ -37,7 +37,7 @@ class Main:
             intents=discord.Intents.all(), 
             console=self.console,
             config=self.config,
-            database=self.database
+            # database=self.database
         )
 
     # A method for running the bot
