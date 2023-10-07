@@ -20,7 +20,7 @@ class Watcher:
         try:
             while True:
                 time.sleep(5)
-        except:
+        except Exception as _:
             self.observer.stop()
             print("Error")
 

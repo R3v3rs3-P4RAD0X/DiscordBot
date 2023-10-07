@@ -181,7 +181,7 @@ class Command:
 
                 # Ensure the field has an inline value
                 if "inline" not in field:
-                    kwargs["inline"] = False
+                    field["inline"] = False
 
                 # Ensure the inline value is a boolean
                 if not isinstance(field["inline"], bool):

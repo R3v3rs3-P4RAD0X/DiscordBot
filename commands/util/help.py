@@ -1,5 +1,4 @@
 from command import Command
-import importlib
 
 
 class Help(Command):

@@ -56,6 +56,7 @@ class Daily(Command):
             timeLeft = pendulum.from_timestamp(lastDaily + 86400)
 
             # Send a message
-            await self.SendMessage(
-                f"You can claim your daily reward in {timeLeft.diff().in_words()}!"
-            )
+            await self.SendMessage("\n".join([
+                f"You can claim your daily reward in {timeLeft.diff().in_words()}!",
+                f"Come back at {timeLeft.to_day_datetime_string()} to claim your daily reward!"
+            ]))

@@ -2,6 +2,14 @@ import discord
 
 
 class Client(discord.Client):
+    CONSTANTS = {
+        "commands": {
+            "economy": {
+                "max_gamble": 1000000
+            }
+        }
+    }
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 

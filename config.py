@@ -3,7 +3,7 @@ import subprocess
 import importlib
 import command
 import asyncio
-import os
+import random
 from types import ModuleType
 
 
@@ -202,3 +202,32 @@ class Config:
         similarity = (1 - (matrix[len_str1][len_str2] / max_len)) * 100
 
         return round(similarity, 2)
+
+    # A function for filtering a list by it's type and validating using a passed function if needed
+    def FilterFirstType(self, array: list, type: type, validate: callable = None) -> any:
+        # Check if array is a list and length > 0
+        if not isinstance(array, list) or len(array) == 0:
+            return False
+        
+        # Loop through the array
+        for item in array:
+            try:
+                # Try to cast the item to the type
+                item = type(item)
+
+                # Check if validate is a function
+                if (validate and callable(validate)) and not validate(item):
+                    continue
+
+                # Return the item
+                return item
+            except Exception:
+                # Continue if the cast fails
+                continue
+            
+        # Return False
+        return False
+    
+    # A functio for generating a random number between a min and max
+    def RandomNumber(self, min: int, max: int) -> int:
+        return random.randint(min, max)

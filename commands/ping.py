@@ -1,5 +1,4 @@
 from command import Command
-import datetime
 
 
 class Ping(Command):
