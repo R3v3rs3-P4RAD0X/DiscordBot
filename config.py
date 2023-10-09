@@ -201,7 +201,7 @@ class Config:
         max_len = max(len_str1, len_str2)
         similarity = (1 - (matrix[len_str1][len_str2] / max_len)) * 100
 
-        return round(similarity, 2)
+        return round(similarity)
 
     # A function for filtering a list by it's type and validating using a passed function if needed
     def FilterFirstType(self, array: list, type: type, validate: callable = None) -> any:

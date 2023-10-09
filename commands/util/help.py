@@ -1,4 +1,5 @@
 from command import Command
+import json
 
 
 class Help(Command):
@@ -11,19 +12,22 @@ class Help(Command):
         # We need to get all the files in the commands directory
         output = self.client.config.FindAll(".py", "commands")
 
-        # Get all the files as commands
-        commands = [
-            self.client.config.HandleCommand(file.split(".")[-1]) for file in output
-        ]
+        # Categories
+        CommandCategories = {}
 
-        # Filter out the commands that don't exist
-        commands = [command for command in commands if command]
+        # Loop through the files
+        for file in output:
+            # Get the command
+            command = self.client.config.HandleCommand(file.split(".")[-1])(
+                self.message, 
+                self.args, 
+                self.client, 
+                self.guildConfig
+            )
 
-        fields = []
-
-        for cls in commands:
-            # Create an instance of the command
-            command = cls(self.message, self.args, self.client, self.guildConfig)
+            # Check if the command exists
+            if not command:
+                continue
 
             # Check if the command is hidden
             if command.hidden:
@@ -32,35 +36,73 @@ class Help(Command):
             # Get the help information
             help = command.help()
 
-            # Create a string for the value
-            value = "\n".join(
-                [
-                    "Description: " + help["desc"],
-                    "Usage: " + help["usage"],
-                    "Aliases: " + ", ".join(help["aliases"]),
-                    f"{'NSFW ' if command.nsfw else ''}{'DISABLED' if command.disabled else ''}{'' if command.executable(self.perms['user']) else ' (Insufficient Permissions)'}",
-                ]
+            # Get the category from the file path, remove commands. and see if there is any other categories  # noqa: E501
+            *categories, name = file.split(".")
+
+            if len(categories) > 1:
+                # Remove the commands folder
+                categories.pop(0)
+
+                # Join the categories
+                category = " ".join(categories)
+
+                # Check if the category exists
+                if category not in CommandCategories:
+                    CommandCategories[category] = []
+
+                # Add the command to the category
+                CommandCategories[category].append(help)
+
+            else:
+                # Check if the category exists
+                if 'General' not in CommandCategories:
+                    CommandCategories['General'] = []
+
+                # Add the command to the category
+                CommandCategories['General'].append(help)
+
+        description = []
+
+        # Loop through the categories
+        for category, commands in CommandCategories.items():
+            # Add the category to the description
+            descDict = {
+                "name": category.title(),
+                "value": []
+            }
+
+            # Loop through the commands
+            for command in commands:
+                # Add the command to the description
+                descDict['value'].append(f"{command['name']} - {command['usage']}")
+            
+            descDict['value'].append('')
+
+            # Join the value by a new line
+            descDict['value'] = '\n'.join(descDict['value'])
+
+            # Add a new line
+            description.append(descDict)
+
+        # Check if the bot can embed_links
+        if self.perms['bot'].embed_links:
+            # Construct the embed
+            embed = self.embed(
+                title="__**Help**__",
+                fields = description,
+                colour=(255, 0, 255),
+                footer=f"Requested by {self.message.author.name}",
+                author=self.client.user.name,
             )
 
-            # Create a new field
-            field = {"name": f"{help['name']}", "value": value, "inline": False}
+            # Send the embed
+            await self.SendEmbed(embed)
 
-            # Add the field to the list
-            fields.append(field)
+            return
+        
+        # Otherwise send a normal message
+        # Reformat the description
+        description = '\n'.join([f"**{category['name']}**\n{category['value']}" for category in description])
 
-        # Send a message
-        await self.SendMessage(
-            "".join(
-                [
-                    "__**Command Help**__\n",
-                    "```md\n",
-                    "\n".join(
-                        [f"> {field['name']}\n{field['value']}\n" for field in fields]
-                    ),
-                    "\n",
-                    "<> = Required\n",
-                    "[] = Optional\n",
-                    "For command specfic help, use `help [command]` disabled\n" "```",
-                ]
-            )
-        )
+        # Send the message
+        await self.SendMessage(f"__**Help**__\n{description}")

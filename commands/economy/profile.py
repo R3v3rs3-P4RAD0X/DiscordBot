@@ -30,7 +30,7 @@ class Profile(Command):
             await self.SendEmbed(
                 self.embed(
                     title=f"{user.name}'s Profile",
-                    description=f"**Balance:** £{profile.balance}\n**Bank:** £{profile.bank}\n**Total:** £{profile.balance + profile.bank}",
+                    description=f"**Balance:** £{profile.balance}\n**Bank:** £{profile.bank}\n\n**Total:** £{profile.balance + profile.bank}",  # noqa: E501
                     colour=(255, 0, 255),
                     thumbnail=thumbnail,
                     footer=f"Requested by {self.message.author.name}",
@@ -41,5 +41,5 @@ class Profile(Command):
         # Otherwise, send a normal message
         else:
             await self.SendMessage(
-                f"**{user.name}'s Profile**\n**Balance:** £{profile.balance}\n**Bank:** £{profile.bank}\n**Total:** £{profile.balance + profile.bank}"
+                f"**{user.name}'s Profile**\n**Balance:** £{profile.balance}\n**Bank:** £{profile.bank}\n\n**Total:** £{profile.balance + profile.bank}"  # noqa: E501
             )
