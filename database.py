@@ -79,6 +79,7 @@ Base.metadata.create_all(engine)
 
 # Database class
 class Database:
+
     def __init__(self):
         # Create a session factory bound to the engine
         self.session_factory = sessionmaker(bind=engine)

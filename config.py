@@ -8,6 +8,7 @@ from types import ModuleType
 
 
 class Config:
+
     def __init__(self):
         pass
 
@@ -165,7 +166,8 @@ class Config:
                 # Check if the key already exists
                 if key in keyval:
                     # Raise an error if the key already exists
-                    raise ValueError(f"Duplicate key '{key}' found in '{filename}'")
+                    raise ValueError(
+                        f"Duplicate key '{key}' found in '{filename}'")
 
                 # Add the key and value to the dictionary
                 keyval[key.strip()] = value.strip()
@@ -204,11 +206,14 @@ class Config:
         return round(similarity)
 
     # A function for filtering a list by it's type and validating using a passed function if needed
-    def FilterFirstType(self, array: list, type: type, validate: callable = None) -> any:
+    def FilterFirstType(self,
+                        array: list,
+                        type: type,
+                        validate: callable = None) -> any:
         # Check if array is a list and length > 0
         if not isinstance(array, list) or len(array) == 0:
             return False
-        
+
         # Loop through the array
         for item in array:
             try:
@@ -224,10 +229,10 @@ class Config:
             except Exception:
                 # Continue if the cast fails
                 continue
-            
+
         # Return False
         return False
-    
+
     # A functio for generating a random number between a min and max
     def RandomNumber(self, min: int, max: int) -> int:
         return random.randint(min, max)

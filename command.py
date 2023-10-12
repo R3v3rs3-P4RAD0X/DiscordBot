@@ -17,16 +17,17 @@ class Command:
     # Permissions
     perms = {"required": discord.Permissions(1 << 10 | 1 << 11)}
 
-    def __init__(
-        self, message: discord.Message, args: [str], client: client.Client, guildConfig
-    ):
+    def __init__(self, message: discord.Message, args: [str],
+                 client: client.Client, guildConfig):
         self.message = message
         self.args = args
         self.client = client
         self.guildConfig = guildConfig
 
-        self.perms["bot"] = self.message.channel.permissions_for(self.message.guild.me)
-        self.perms["user"] = self.message.channel.permissions_for(self.message.author)
+        self.perms["bot"] = self.message.channel.permissions_for(
+            self.message.guild.me)
+        self.perms["user"] = self.message.channel.permissions_for(
+            self.message.author)
 
     def executable(self, other: discord.Permissions):
         if self.dev and self.message.author.id not in self.client.devs:
@@ -55,11 +56,11 @@ class Command:
     # A function for handling the sending of a message
     async def SendMessage(self, message):
         # Send the message
-        await self.message.channel.send(message)
+        return await self.message.channel.send(message)
 
     async def SendEmbed(self, embed):
         # Send the embed
-        await self.message.channel.send(embed=embed)
+        return await self.message.channel.send(embed=embed)
 
     # A default run method
     async def run(self):
@@ -107,9 +108,9 @@ class Command:
                     raise ValueError("colour items must be between 0 and 255")
 
             # Set the colour
-            embed.colour = discord.Colour.from_rgb(
-                kwargs["colour"][0], kwargs["colour"][1], kwargs["colour"][2]
-            )
+            embed.colour = discord.Colour.from_rgb(kwargs["colour"][0],
+                                                   kwargs["colour"][1],
+                                                   kwargs["colour"][2])
 
         if "url" in kwargs:
             # Ensure the url is a string
@@ -188,9 +189,9 @@ class Command:
                     raise TypeError("field inline value must be a boolean")
 
                 # Add the field
-                embed.add_field(
-                    name=field["name"], value=field["value"], inline=field["inline"]
-                )
+                embed.add_field(name=field["name"],
+                                value=field["value"],
+                                inline=field["inline"])
 
         # Return the embed
         return embed

@@ -46,6 +46,9 @@ class Gamble(Command):
                 # Save the user's economy
                 self.client.database.UpdateUser(user)
 
+                # Convert winMultiplier to a percentage
+                winMultiplier = round(winMultiplier * 100)
+
                 # Check if the user can embed links
                 if self.perms['bot'].embed_links:
                     # Create the embed
@@ -58,7 +61,7 @@ class Gamble(Command):
                             },
                             {
                                 "name": "Random Win Multiplier",
-                                "value": f"{winMultiplier * 100}%"
+                                "value": f"{winMultiplier}%"
                             }
                         ],
                         colour = (0, 255, 0),
@@ -73,7 +76,7 @@ class Gamble(Command):
                 await self.SendMessage("\n".join([
                     "You won!",
                     f"Amount: £{won + amount} (£{amount} + £{won})",
-                    f"Random Win Multiplier: {winMultiplier * 100}%",
+                    f"Random Win Multiplier: {winMultiplier}%",
                     "Amount won is your bet + the amount you won"
                 ]))
                 return
