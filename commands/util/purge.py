@@ -1,22 +1,14 @@
 from command import Command
-
+import discord
 
 class Purge(Command):
     usage = "purge <amount>"
 
+    perms = {
+        'required': discord.Permissions(1 << 10 | 1 << 11 | 1 << 13),
+    }
+
     async def run(self):
-        # Check if the user has manage_messages permission
-        if not self.perms['user'].manage_messages:
-            resp = await self.SendMessage("You don't have permission to purge messages!")
-            await resp.delete(delay=5)
-            return
-        
-        # Check if the bot has manage_messages permission
-        if not self.perms['bot'].manage_messages:
-            resp = await self.SendMessage("I don't have permission to purge messages!")
-            await resp.delete(delay=5)
-            return
-        
         # Check if args length is >= 1
         if len(self.args) >= 1:
             # Get the amount to purge

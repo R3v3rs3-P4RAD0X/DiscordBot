@@ -47,7 +47,7 @@ class Handler(FileSystemEventHandler):
                         proc.kill()
                 threading.Thread(
                     target=subprocess.call,
-                    args=(["python", "/root/Projects/DiscordBot/main.py"], ),
+                    args=(["python", os.path.join(os.getcwd(), "main.py")], ),
                 ).start()
 
 

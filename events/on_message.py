@@ -1,5 +1,6 @@
 import client
 import discord
+import math
 
 
 async def on_message(self: client.Client, message: discord.Message):
@@ -74,9 +75,7 @@ async def on_message(self: client.Client, message: discord.Message):
                         )
 
                         # Check if the member and the bot has the required permissions
-                        if command.executable(
-                            member_permissions
-                        ) and command.executable(bot_permissions):
+                        if command.executable(member_permissions) and command.executable(bot_permissions):
                             try:
                                 # Run the command
                                 await run()
