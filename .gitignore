@@ -12,6 +12,12 @@ __pycache__/
 # Hide IDE specific files
 .vscode
 
+# Remove logs
+logs/*
+
+# Remove test files
+tests/*
+
 # Remove database
 ./data/users/*
 ./data/guilds/*
