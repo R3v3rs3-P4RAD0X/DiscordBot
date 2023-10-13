@@ -3,7 +3,7 @@
 #              just extend this class and implement a way of running
 #              the command.
 # Author: StrangeParadox
-# Version: 0.0.1
+# Version: 0.0.2
 
 # Imports
 from components.help import Help
