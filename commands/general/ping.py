@@ -16,7 +16,6 @@ class Ping(Command):
     response time.
     """
 
-    def __init__(self):
-        pass
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
-    

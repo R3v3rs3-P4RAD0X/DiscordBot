@@ -44,9 +44,6 @@ class Create:
         if self.file_directory != "" or self.file_directory != "None":
             # Create the path
             path = os.path.join(path, self.file_directory)
-
-            print(path)
-
             # Make the dirs if exists_ok
             os.makedirs(path, exist_ok=True)
 
@@ -112,7 +109,7 @@ class Create:
         file.close()
 
         # Tell the user the file was created and where it's located
-        print("Created file: " + path + self.file_name.lower() + ".py")
+        print("Created file: " + os.path.join(path, self.file_name.lower()) + ".py")
 
     def text_to_chunks(self, text, chunk_size, default: bool = True) -> str:
         # Split the text into words
