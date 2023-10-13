@@ -2,12 +2,12 @@
 Written in python using the discord.py library, this bot includes a component based structure that allows for easy addition of new features.
 
 ## Features
-- [x] Moderation
-- [x] Music
-- [x] Fun
-- [x] Utility
-- [x] Logging
-- [x] Help
+- [❌] Moderation
+- [❌] Music
+- [❌] Fun
+- [❌] Utility
+- [❌] Logging
+- [✔️] Help
 
 ## Installation
 1. Clone the repository
