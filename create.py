@@ -1,7 +1,7 @@
 # File: Create
 # Description: Creates new python files using a specific layout.
 # Author: StrangeParadox
-# Version: 0.0.1
+# Version: 0.0.2
 
 # Imports
 import os
@@ -25,6 +25,35 @@ class Create:
         self.file_directory = ""
         self.extends = ""
 
+    def handle_imports(self):
+        """
+        Returns a formatted string of the imports.
+        So it can be added to the file.
+        """
+        # Check if there are any imports
+        if len(self.file_imports) == 0 or self.file_imports in ["", " ", "None"]:
+            return ""
+        
+        # Create the imports string
+        imports = ""
+
+        # Loop through the imports
+        for i in self.file_imports:
+            # Check if import has a -> in it
+            if '->' in i:
+                # Split the import
+                module, feature = i.split('->')
+
+                # Add the import to the imports string
+                imports += "from " + module + " import " + feature + "\n"
+
+            else:
+                # Add the import to the imports string
+                imports += "import " + i + "\n"
+
+        # Return the imports string
+        return imports
+
     def ask(self):
         """
         Ask the user some questions about the new file to create.
@@ -33,7 +62,7 @@ class Create:
         self.file_directory = input("Is this file in any subdirectories? Enter the directory path: ")
         self.file_name = input("What is the name of the file? ")
         self.file_description = input("What is the description of the file? ")
-        self.file_imports = input("What are the imports of the file? ").split(" ")
+        self.file_imports = input("What are the imports of the file? ").split(", ")
         self.extends = input("What does the file extend? ")
 
     def create(self):
@@ -57,52 +86,19 @@ class Create:
         file.write("# Version: " + self.file_version + "\n")
         file.write("\n")
         file.write("# Imports\n")
-        if self.file_imports != [""] or self.file_imports != ["None"]:
-            for import_ in self.file_imports:
-                if not "#" in import_:
-                    # Check if there's a ; in the import
-                    if ";" in import_:
-                        # Split by the ;
-                        name = import_.split(";")
-
-                        # Do a import with an as
-                        file.write("import " + name[0] + " as " + name[-1].strip() + "\n")
-                    
-                    else:
-                        file.write("import " + import_.strip() + "\n")
-
-                else:
-                    # Split by the #
-                    split_import = import_.split("#")
-
-                    # Check if there's a ; in the second part
-                    if ";" in split_import[1]:
-                        # Split by the ;
-                        name = split_import[1].split(";")[-1]
-
-                        # Do a from import with an as
-                        file.write("from " + split_import[0].strip() + " import " + split_import[1].strip() + " as " + name.strip() + "\n")
-                    
-                    else:
-                        # Do a from import 
-                        file.write("from " + split_import[0].strip() + " import " + split_import[1].strip() + "\n")
-        file.write("\n\n")
-        if self.extends != "" or self.extends != "None":
-            file.write("class " + self.file_name.title() + "(" + self.extends + "):\n")
-            file.write("    \"\"\"\n")
-            file.write("    " + self.text_to_chunks(self.file_description, 10, False) + "\n")
-            file.write("    \"\"\"\n")
-            file.write("\n")
-            file.write("    def __init__(self, *args, **kwargs):\n")
-            file.write("        super().__init__(*args, **kwargs)\n")
-        else:
-            file.write("class " + self.file_name.title() + ":\n")
-            file.write("    \"\"\"\n")
-            file.write("    " + self.text_to_chunks(self.file_description, 10, False) + "\n")
-            file.write("    \"\"\"\n")
-            file.write("\n")
-            file.write("    def __init__(self):\n")
-            file.write("        pass\n")
+        file.write(self.handle_imports())
+        file.write("\n")
+        file.write(f"class {self.file_name.title()}{'(' + self.extends + ')' if self.extends not in ['', ' ', 'None'] else '' }:\n")
+        file.write(f"    \"\"\"\n")
+        file.write(f"    {self.text_to_chunks(self.file_description, 10, False)}\n")
+        file.write(f"    \"\"\"\n")
+        file.write("\n")
+        file.write(f"    def __init__(self{', *args, **kwargs' if self.extends not in ['', ' ', 'None'] else ''}):\n")
+        file.write(f"        \"\"\"\n")
+        file.write(f"        Initialize the class.\n")
+        file.write(f"        Set the variables.\n")
+        file.write(f"        \"\"\"\n")
+        file.write(f"        {'super().__init__(*args, **kwargs)' if self.extends not in ['', ' ', 'None'] else 'pass'}\n")
         file.write("\n")
 
         # Close the component file

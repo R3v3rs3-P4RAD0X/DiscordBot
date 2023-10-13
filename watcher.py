@@ -9,7 +9,7 @@ from typing import Union, List
 
 # CONSTANTS
 FILE_TO_LOAD: str = "main.py"
-SUPPORTED_SUBDIRECTORIES: List[str] = []
+SUPPORTED_SUBDIRECTORIES: List[str] = ["events", "components"]
 
 class Watcher:
     # Define the directory to watch
@@ -49,24 +49,25 @@ class Handler(FileSystemEventHandler):
                     return None
                 
                 # Check if the file is in a supported subdirectory
-                if len(SUPPORTED_SUBDIRECTORIES) > 0 and not any([event.src_path.startswith(os.path.join(os.getcwd(), subdirectory)) for subdirectory in SUPPORTED_SUBDIRECTORIES]):
-                    return None
-                
-                # Clear the terminal
-                os.system("clear")
+                if len(SUPPORTED_SUBDIRECTORIES) > 0:
+                    if not any([True for i in SUPPORTED_SUBDIRECTORIES if i in event.src_path]):
+                        return None
+              
+                    # Clear the terminal
+                    os.system("clear")
 
-                # Print file change was detected, reloading main.py
-                print("File change detected: {}\nReloading: {}".format(event.src_path, FILE_TO_LOAD))
+                    # Print file change was detected, reloading main.py
+                    print("File change detected: {}\nReloading: {}".format(event.src_path, FILE_TO_LOAD))
 
-                # Kill the main.py process
-                for proc in psutil.process_iter(attrs=['name', 'cmdline']):
-                    # Check if the process is python and if the process is main.py
-                    if proc.info['name'] == "python" and FILE_TO_LOAD in " ".join(proc.info['cmdline']):
-                        # Kill the process
-                        proc.kill()
+                    # Kill the main.py process
+                    for proc in psutil.process_iter(attrs=['name', 'cmdline']):
+                        # Check if the process is python and if the process is main.py
+                        if proc.info['name'] == "python" and FILE_TO_LOAD in " ".join(proc.info['cmdline']):
+                            # Kill the process
+                            proc.kill()
 
-                # Call the function to start a new threaded process of FILE_TO_LOAD
-                threading.Thread(target=subprocess.call, args=(["python", os.path.join(os.getcwd(), FILE_TO_LOAD)],)).start()
+                    # Call the function to start a new threaded process of FILE_TO_LOAD
+                    threading.Thread(target=subprocess.call, args=(["python", os.path.join(os.getcwd(), FILE_TO_LOAD)],)).start()
 
 # Run the watcher
 if __name__ == "__main__":
