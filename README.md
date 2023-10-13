@@ -23,7 +23,7 @@ Written in python using the discord.py library, this bot includes a component ba
 TOKEN=your_token_here
 PREFIX=your_prefix_here
 ```
-6. Run the bot optionally use step 7
+6. Run the bot, optionally use step 7
 `python bot.py`
 
 7. Run the bot using watcher.py
