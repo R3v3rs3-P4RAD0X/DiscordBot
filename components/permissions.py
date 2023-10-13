@@ -2,7 +2,7 @@
 # Description: a permissions handler with functions to help comparing and returning
 #              missing permissions from another instance.
 # Author: StrangeParadox
-# Version: 0.0.1
+# Version: 0.0.2
 
 # Imports
 import discord
@@ -37,7 +37,7 @@ class Permissions:
     VALUE: int = None
     FLAGS = discord.Permissions.VALID_FLAGS
     INVERSE_FLAGS = {v: k for k, v in FLAGS.items()}
-    TOTAL = 1 << 1 | sum(1 << x for x in range(2, 47))
+    TOTAL = 114349209288703
     ISSET: list[dict[str, any]] = None
 
     
@@ -45,13 +45,19 @@ class Permissions:
         """
         Initialises the Permissions class with a bitfield.
         """
-        
         if type(bitfield) == int:
             # Check if the bitfield is within the valid range
-            if bitfield < 0 or bitfield > self.TOTAL:
+            if bitfield < 0:
                 raise ValueError(f"Invalid bitfield: {bitfield}")
             
-            self.VALUE = bitfield
+            for i in range(0, 47):
+                if self.INVERSE_FLAGS.get(1 << i, None) != None:
+                    if bitfield & (1 << i) == 1 << i:
+                        if self.VALUE == None:
+                            self.VALUE = 1 << i
+                        else:
+                            self.VALUE |= 1 << i
+            
         else:
             for arg in args:
                 if arg not in self.FLAGS:
@@ -74,9 +80,15 @@ class Permissions:
 
         # Check which permissions are set
         for i in range(self.LOWEST_SET, self.HIGHEST_SET + 1):
-            if (self.VALUE & (1 << i)) == 1 << i:
-                self.ISSET.append(dict(name=self.INVERSE_FLAGS[1 << i], value=1 << i, log2=i))
-                
+            # Check if the permission is in the INVERSE_FLAGS
+            if (name := self.INVERSE_FLAGS.get(1 << i, None)) != None:
+                # Check if the permission is set
+                if self.VALUE & (1 << i) == 1 << i:
+                    self.ISSET.append(dict(
+                        name=name,
+                        value=1 << i,
+                        log2=i
+                    ))
 
     def __gt__(self, other: 'Permissions'):
         """
@@ -185,9 +197,4 @@ class Permissions:
                 return False
         
         return True
-    
 
-if __name__ == '__main__':
-    p1 = Permissions(1 << 10 | 1 << 11 | 1 << 12)
-
-    print(p1.LOWEST_SET, p1.HIGHEST_SET)
