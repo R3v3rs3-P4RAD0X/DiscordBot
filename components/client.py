@@ -2,10 +2,13 @@
 # Description: This is the heart of the discord bot, this class
 #              is an extension of discord.Client
 # Author: StrangeParadox
-# Version: 0.0.1
+# Version: 0.0.2
 
 # Imports
 import discord
+import rich
+from components.handler import Handler
+from components.ratelimit import Ratelimit
 
 
 class Client(discord.Client):
@@ -20,18 +23,7 @@ class Client(discord.Client):
         """
         super().__init__(*args, **kwargs)
 
-
-    async def on_ready(self):
-        """
-        Called when the client is ready.
-        Will print basic information about the client.
-        """
-        
-        # Print some basic information about the client
-        print("Logged in as: {}".format(self.user))
-
-        # Set the client's status
-        await self.change_presence(activity=discord.Game(name="with Python"))
-
-    async def on_message(self, message: discord.Message):
-        pass
+        self.console: rich.console.Console = kwargs.get("console")
+        self.env: dict = {}
+        self.command_handler: Handler = kwargs.get("command_handler")
+        self.ratelimit: Ratelimit = kwargs.get("ratelimit")
