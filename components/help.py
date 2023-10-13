@@ -2,7 +2,7 @@
 # Description: This component is for getting and displaying all the help
 #              related data for any item.
 # Author: StrangeParadox
-# Version: 0.0.1
+# Version: 0.0.2
 
 # Imports
 import discord
@@ -25,7 +25,7 @@ class Help:
         """
         self.aliases = aliases
         self.description = description
-        self.usage = "{}{}".format(command.config['prefix'], command.__class__.__name__) if usage == None else usage
+        self.usage = "{}{}".format(command.client.env['PREFIX'], command.__class__.__name__.lower()) if usage == None else usage
         self.command = command
 
 
