@@ -1,8 +1,10 @@
-# Component: Permissions
+# File: Permissions
 # Description: a permissions handler with functions to help comparing and returning
 #              missing permissions from another instance.
 # Author: StrangeParadox
 # Version: 0.0.1
+
+# Imports
 import discord
 
 class Permissions:
@@ -39,20 +41,39 @@ class Permissions:
     ISSET: list[dict[str, any]] = None
 
     
-    def __init__(self, bitfield: int):
+    def __init__(self, bitfield: int, *args: str):
         """
         Initialises the Permissions class with a bitfield.
         """
-
-        # Check if the bitfield is within the valid range
-        if bitfield < 0 or bitfield > self.TOTAL:
-            raise ValueError(f"Invalid bitfield: {bitfield}")
         
-        self.VALUE = bitfield
+        if type(bitfield) == int:
+            # Check if the bitfield is within the valid range
+            if bitfield < 0 or bitfield > self.TOTAL:
+                raise ValueError(f"Invalid bitfield: {bitfield}")
+            
+            self.VALUE = bitfield
+        else:
+            for arg in args:
+                if arg not in self.FLAGS:
+                    raise ValueError(f"Invalid flag: {arg}")
+                
+                if self.VALUE == None:
+                    self.VALUE = self.FLAGS[arg]
+
+                else:
+                    self.VALUE |= self.FLAGS[arg]
+
+        # Default the ISSET list to an empty list
         self.ISSET = []
 
+        # Get the min value set in the bitfield
+        self.LOWEST_SET = len(bin(self.VALUE)[2:]) - len(bin(self.VALUE)[2:].rstrip("0"))
+
+        # Get the max value set in the bitfield
+        self.HIGHEST_SET = len(bin(self.VALUE)[2:]) -1
+
         # Check which permissions are set
-        for i in range(1, 47):
+        for i in range(self.LOWEST_SET, self.HIGHEST_SET + 1):
             if (self.VALUE & (1 << i)) == 1 << i:
                 self.ISSET.append(dict(name=self.INVERSE_FLAGS[1 << i], value=1 << i, log2=i))
                 
@@ -140,3 +161,33 @@ class Permissions:
         """
 
         return [x for x in self.ISSET if x not in other.ISSET]
+
+    def has(self, permission: str) -> bool:
+        """
+        Checks if the permission is set.
+        """
+
+        if permission not in self.FLAGS:
+            raise ValueError(f"Invalid flag: {permission}")
+
+        return self.VALUE & self.FLAGS[permission] == self.FLAGS[permission]
+    
+    def has_all(self, *permissions: str) -> bool:
+        """
+        Checks if all permissions are set.
+        """
+
+        for permission in permissions:
+            if permission not in self.FLAGS:
+                raise ValueError(f"Invalid flag: {permission}")
+
+            if self.VALUE & self.FLAGS[permission] != self.FLAGS[permission]:
+                return False
+        
+        return True
+    
+
+if __name__ == '__main__':
+    p1 = Permissions(1 << 10 | 1 << 11 | 1 << 12)
+
+    print(p1.LOWEST_SET, p1.HIGHEST_SET)
