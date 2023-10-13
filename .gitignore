@@ -10,7 +10,13 @@ venv
 __pycache__/
 
 # Hide IDE specific files
-.vscode
+.vscode/*
+
+# Remove logs
+logs/*
+
+# Remove test files
+tests/*
 
 # Remove database
 ./data/users/*

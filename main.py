@@ -1,55 +1,105 @@
-# DiscordBot
-import discord
-import rich
-import config
-import client
-import database
+# File: Main
+# Description: This is the heart of the project, this is where
+#              all the different features and brought into one.
+# Author: StrangeParadox
+# Version: 0.0.2
 
+# Imports
+import components
+import discord
+import os
+import rich
 
 class Main:
-    # Constructor
+    """
+    This is the heart of the project, where all the different features are brought into one.
+
+    Attributes:
+    -----------
+    components : object
+        An object containing all the components of the bot.
+    client : object
+        An object representing the Discord bot client.
+    env : dict
+        A dictionary containing the environment variables loaded from the .env file.
+    """
+
     def __init__(self):
-        # Initialise the config class
-        self.config = config.Config()
-
-        # Load the .env file
-        self.env = self.config.HandleKeyValStore(".env")
-
-        # Initialise the Rich console
+        """
+        Combine all the components into one and start the bot.
+        """
         self.console = rich.get_console()
+        # Clear the console
+        os.system("clear" if os.name == "posix" else "cls")
 
-        # Initialise the database class
-        self.database = database.Database()
+        # Print the header
+        self.console.print("[bold]StrangeParadox's Discord Bot[/bold]", justify="center")
 
-        # Get the events
-        events = self.config.HandleEvents()
+        # Create the components object
+        self.components = components
 
-        # Loop over the events
-        for event in events:
-            # Deconstruct the event
-            name, func = event
+        # Create the command handler
+        self.command_handler = self.components.Handler(console=self.console)
 
-            # Add the event to the client
-            setattr(client.Client, name, func)
+        # Create the event handler
+        self.event_handler = self.components.Handler("events", console=self.console)
 
-        # Initialise the Discord client
-        self.client = client.Client(
-            intents=discord.Intents.all(),
+        # Get the longest lengthed item
+        self.longest = max(self.command_handler.longest, self.event_handler.longest)
+
+        # Loop over the commands and register them
+        for found in self.command_handler.find_all():
+            command = self.command_handler.load(found)
+
+            self.console.log("Handler -> [green]Command[/green]: {0} ([green]Loaded[/green])".format(command['name'].ljust(self.longest, ' ')))
+
+        self.console.log()
+        self.command_handler.initialised = True
+
+        # Loop over the events and register them
+        for found in self.event_handler.find_all():
+            event = self.event_handler.load(found)
+
+            # Register the event
+            setattr(self.components.Client, event['name'], event['object'])
+
+            # Print the event
+            self.console.log(f"Handler -> [green]Bind   [/green]: {event['name'].ljust(self.longest, ' ')} ([green]Loaded[/green])")
+
+        self.console.log()
+        self.event_handler.initialised = True
+
+        # Initialise the components.RateLimit
+        self.ratelimit = self.components.Ratelimit()
+
+
+        # Create the client
+        self.client = self.components.Client(
+            intents=discord.Intents.all(), 
             console=self.console,
-            config=self.config,
-            database=self.database,
+            command_handler=self.command_handler,
+            ratelimit=self.ratelimit
         )
 
-    # A method for running the bot
+        # Get the env file read and loaded
+        self.env = self.components.Util().read_key_val_file(".env")
+
     def start(self):
+        """
+        Start the bot.
+        """
+        # Get the token from the env dictionary
+        TOKEN = self.env["TOKEN"]
+
+        # Remove the token from the env dictionary
+        del self.env["TOKEN"]
+
+        # Set the env dictionary as an attribute of the client
+        self.client.env = self.env
+
         # Run the bot
-        self.client.run(self.env["TOKEN"])
+        self.client.run(TOKEN)
 
 
-# Run the Main class
-if __name__ == "__main__":
-    # Initialise the Main class
-    main = Main()
-
-    # Call the start method
-    main.start()
+if __name__ == '__main__':
+    Main().start()

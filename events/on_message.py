@@ -1,87 +1,58 @@
-import client
+# File: On_Message
+# Description: Handles the message event from the client.
+# Author: StrangeParadox
+# Version: 0.0.2
+
+# Imports
 import discord
-import math
+from components import Client
 
-
-async def on_message(self: client.Client, message: discord.Message):
-    # If the message is from a bot, ignore it
-    if message.author.bot:
+async def on_message(self: Client, message: discord.Message):
+    """
+    Handles the message event from the client.
+    """
+    # Check if the message wasn't sent in a guild
+    if message.channel.type != discord.ChannelType.text:
+        # Return
         return
+    
+    # Check if the message was received from a bot
+    if message.author.bot:
+        # Return
+        return
+    
+    # Get the prefix from the database
+    prefix = self.env.get("PREFIX", "s!")
 
-    # Check if the message was sent in a guild
-    if message.guild:
-        # Using self.config, get the config for the guild
-        config = self.database.GetGuild(message.guild.id).config
+    # Check if the message doesn't start with the prefix
+    if not message.content.startswith(prefix):
+        # Return
+        return
+    
+    # Get the command and args from the message
+    command, *args = message.content.lstrip(prefix).strip().split()
 
-        # print(config)
+    # Find the command using the command handler
+    found = self.command_handler.find(command)
 
-        # Check if the message starts with the prefix
-        if message.content.startswith(config.prefix):
-            # Get the command and arguments
-            command, *args = message.content[len(config.prefix) :].strip().split(" ")
+    # Check if the command was found
+    if found:
+        # Load the command
+        command = self.command_handler.load(found, True if message.author.id == 472571500637978626 else False)
 
-            # Lowercase the command
-            command = command.lower()
+        # Initialize the command
+        cmd = command["object"](message, args, self, {
+            "ratelimiter": self.ratelimit
+        })
 
-            # Check if the command is an alias
-            if command in self.aliases:
-                # Set the command to the alias
-                command = self.aliases[command]
+        # Run the command
+        returned = await cmd.execute()
 
-            # Get a set of all the commands from the aliases
-            commands = set(self.aliases.values())
+        # Check if the instance of returned is a tuple
+        if isinstance(returned, tuple):
+            print(returned[0])
+        
 
-            # Loop through the commands if command not in commands
-            if command not in commands:
-                for cmd in commands:
-                    # Using the similar function check if the command is similar
-                    if (per := self.config.Similar(cmd, command)) >= 70:
-                        # Set the command to the similar command
-                        command = cmd
+    
 
-                        # Check if the bot can send a message
-                        if (
-                            message.channel.permissions_for(
-                                message.guild.me
-                            ).send_messages
-                            and per <= 75
-                        ):
-                            # Send a message
-                            resp = await message.channel.send(
-                                f"> Selected command: **{command.title()}** as similarity match of {per}%"
-                            )
 
-                            # Delete the message after 5 seconds
-                            await resp.delete(delay=5)
-
-                        # Break out of the loop
-                        break
-
-            if Command := self.config.HandleCommand(command):
-                command = Command(message, args, self, config)
-
-                # Check if the command has a run method
-                if run := getattr(command, "run", False):
-                    # Check if the run function is callable
-                    if callable(run):
-                        # Get member permissions
-                        member_permissions = message.channel.permissions_for(
-                            message.author
-                        )
-
-                        # Get the bot's permissions
-                        bot_permissions = message.channel.permissions_for(
-                            message.guild.me
-                        )
-
-                        # Check if the member and the bot has the required permissions
-                        if command.executable(member_permissions) and command.executable(bot_permissions):
-                            try:
-                                # Run the command
-                                await run()
-
-                            except NotImplementedError as ni:
-                                # Log the error in format Command: Error
-                                self.console.log(
-                                    f"{command.__class__.__name__}: [red]{ni}[/red]"
-                                )
