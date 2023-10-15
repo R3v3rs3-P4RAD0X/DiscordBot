@@ -2,14 +2,14 @@
 # Description: This is the heart of the discord bot, this class
 #              is an extension of discord.Client
 # Author: StrangeParadox
-# Version: 0.0.2
+# Version: 0.0.3
 
 # Imports
 import discord
 import rich
 from components.handler import Handler
 from components.ratelimit import Ratelimit
-
+from components.database import Database, User, Economy
 
 class Client(discord.Client):
     """
@@ -27,3 +27,8 @@ class Client(discord.Client):
         self.env: dict = {}
         self.command_handler: Handler = kwargs.get("command_handler")
         self.ratelimit: Ratelimit = kwargs.get("ratelimit")
+        self.database: Database = kwargs.get("database")
+        self.db_supported_types = {
+            "user": User,
+            "economy": Economy
+        }

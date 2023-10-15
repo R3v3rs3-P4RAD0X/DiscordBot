@@ -38,6 +38,12 @@ class Main:
         # Create the components object
         self.components = components
 
+        # Get the env file read and loaded
+        self.env = self.components.Util().read_key_val_file(".env")
+
+        # Create the database object
+        self.database = self.components.Database(self.env["MYSQL_URL"])
+
         # Create the command handler
         self.command_handler = self.components.Handler(console=self.console)
 
@@ -78,11 +84,11 @@ class Main:
             intents=discord.Intents.all(), 
             console=self.console,
             command_handler=self.command_handler,
-            ratelimit=self.ratelimit
+            ratelimit=self.ratelimit,
+            database=self.database
         )
 
-        # Get the env file read and loaded
-        self.env = self.components.Util().read_key_val_file(".env")
+        
 
     def start(self):
         """
