@@ -8,6 +8,8 @@ Written in python using the discord.py library, this bot includes a component ba
 - [❌] Utility
 - [❌] Logging
 - [✔️] Help
+- [❌] Economy
+- [✔️] Database
 
 ## Installation
 1. Clone the repository
