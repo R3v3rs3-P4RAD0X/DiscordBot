@@ -5,7 +5,7 @@
 
 # Imports
 import os
-
+import sys
 
 class Create:
     """
@@ -24,6 +24,7 @@ class Create:
         self.file_imports = []
         self.file_directory = ""
         self.extends = ""
+        self.flags = sys.argv[1:]
 
     def handle_imports(self):
         """
@@ -113,6 +114,11 @@ class Create:
         # Tell the user the file was created and where it's located
         print("Created file: " + os.path.join(path, self.file_name.lower()) + ".py")
 
+        # Check if the length of the flags is > 0
+        if len(self.flags) > 0:
+            # Run the handle_flags function
+            self.handle_flags()
+
     def text_to_chunks(self, text, chunk_size, default: bool = True) -> str:
         # Split the text into words
         words = text.split(" ")
@@ -135,6 +141,36 @@ class Create:
         # Return the chunks
         return "\n#              ".join(chunks) if default else "\n    ".join(chunks)
     
+    def handle_flags(self):
+        # Check what flags were passed
+        for flag in self.flags:
+            match flag:
+                case '-h' | '--help':
+                    print("Help currently doesn't have an implementation.")
+
+                case '-i':
+                    # This will add the file to the __init__.py file
+                    # Open the __init__.py file in the directory passed if any
+                    # Check if a directory was passed
+                    if len(self.file_directory) > 0:
+                        # Create the path
+                        path = os.path.join(os.getcwd(), self.file_directory, "__init__.py")
+                        
+                        # Open the file
+                        file = open(path, "a")
+
+                        # Write the import to the file
+                        file.write("from " + self.file_directory + "." + self.file_name + " import " + self.file_name.title() + "\n")
+
+                        # Close the file
+                        file.close()
+
+                        # Tell the user the file was added to the __init__.py file
+                        print("Added file to __init__.py file.")
+                    
+                    else:
+                        print("No directory was passed.")
+
 
 if __name__ == '__main__':
     # Create the class
