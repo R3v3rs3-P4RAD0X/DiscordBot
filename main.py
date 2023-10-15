@@ -78,7 +78,6 @@ class Main:
         # Initialise the components.RateLimit
         self.ratelimit = self.components.Ratelimit()
 
-
         # Create the client
         self.client = self.components.Client(
             intents=discord.Intents.all(), 

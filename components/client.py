@@ -10,6 +10,7 @@ import rich
 from components.handler import Handler
 from components.ratelimit import Ratelimit
 from components.database import Database, User, Economy
+from components.economy import Economy
 
 class Client(discord.Client):
     """
@@ -28,7 +29,8 @@ class Client(discord.Client):
         self.command_handler: Handler = kwargs.get("command_handler")
         self.ratelimit: Ratelimit = kwargs.get("ratelimit")
         self.database: Database = kwargs.get("database")
-        self.db_supported_types = {
+        self.db_supported_types: dict[str, User|Economy] = {
             "user": User,
             "economy": Economy
         }
+        self.economy: Economy = Economy(self)
