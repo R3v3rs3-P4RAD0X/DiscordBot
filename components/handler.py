@@ -94,7 +94,7 @@ class Handler:
         output.pop()
 
         # Return the output
-        return self.generalise(output[0]) or None
+        return None if len(output) == 0 else self.generalise(output[0])
     
     def load(self, path: str, developer: bool = False) -> object:
         """
@@ -121,7 +121,7 @@ class Handler:
                     return self.cache[path]
                 
                 # Reload the module
-                module = importlib.reload(path)
+                module = importlib.reload(importlib.import_module(path))
 
                  # Check if the module has an attribute called name
                 if not hasattr(module, name):

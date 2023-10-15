@@ -11,6 +11,7 @@ from components.handler import Handler
 from components.ratelimit import Ratelimit
 from components.database import Database, User, Economy
 from components.economy import Economy
+from components.command import Command
 
 class Client(discord.Client):
     """

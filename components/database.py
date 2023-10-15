@@ -16,6 +16,7 @@ class User(Base):
 
     # Columns
     id = sqlalchemy.Column(sqlalchemy.BigInteger, primary_key=True)
+    badges = sqlalchemy.Column(sqlalchemy.TEXT, default="")
 
     # Relationships
     economy = sqlalchemy.orm.relationship("Economy", uselist=False, back_populates="user")
@@ -62,9 +63,21 @@ class Database:
         Initialize the class.
         Set the variables.
         """
-        self.engine = sqlalchemy.create_engine(url or "sqlite:///database.db")
+        self.url = url or "sqlite:///database.db"
         self.base = Base
+        
+        self.engine = None
+        self.session = None
+        self.queries = 0
 
+        self.start_session()
+
+    def start_session(self):
+        if self.session != None:
+            self.session.commit()
+            self.session.close()
+
+        self.engine = sqlalchemy.create_engine(self.url)
         self.base.metadata.create_all(self.engine)
         self.session = sessionmaker(bind=self.engine)()
 
@@ -78,7 +91,12 @@ class Database:
         Returns:
         User or False: The user object if found, False otherwise.
         """
-        return self.session.query(User).filter_by(id=user_id).first() or False
+        user = self.session.query(User).filter_by(id=user_id).first() or False
+
+        if user:
+            self.session.refresh(user)
+
+        return user
     
     def create_user(self, user_id: int) -> User:
         """
@@ -90,10 +108,14 @@ class Database:
         Returns:
         User: The created user object.
         """
-        user = User(id=user_id)
+        # Check if the user already exists
+        user = self.get_user(user_id)
 
-        self.session.add(user)
-        self.session.commit()
+        if not user:
+            user = User(id=user_id)
+
+            self.session.add(user)
+            self.session.commit()
 
         return user
     
@@ -127,7 +149,12 @@ class Database:
         Returns:
         Economy or False: The economy object if found, False otherwise.
         """
-        return self.session.query(Economy).filter_by(user_id=user_id).first() or False
+        economy = self.session.query(Economy).filter_by(user_id=user_id).first() or False
+
+        if economy:
+            self.session.refresh(economy)
+
+        return economy
     
     def create_economy(self, user_id: int) -> Economy:
         """
@@ -139,10 +166,14 @@ class Database:
         Returns:
         Economy: The created economy object.
         """
-        economy = Economy(user_id=user_id)
+        # Check if the economy exists
+        economy = self.get_economy(user_id)
 
-        self.session.add(economy)
-        self.session.commit()
+        if not economy:
+            economy = Economy(user_id=user_id)
+
+            self.session.add(economy)
+            self.session.commit()
 
         return economy
     
@@ -177,6 +208,11 @@ class Database:
         Returns:
         bool: True if the economy was updated, False otherwise.
         """
+        # Check if > 5 queries have been made
+        if self.queries > 5:
+            self.start_session()
+            self.queries = 0
+
         economy = self.get_economy(user_id)
 
         if not economy:
@@ -191,9 +227,10 @@ class Database:
         
         self.session.commit()
 
+        self.queries += 1
         return True
     
-    def handle_user(self, user_id: int) -> User:
+    def handle_user(self, user_id: int, create: bool = True) -> User:
         """
         Handle a user.
 
@@ -203,14 +240,49 @@ class Database:
         Returns:
         User: The user object.
         """
+        # Check if > 5 queries have been made
+        if self.queries > 5:
+            self.start_session()
+            self.queries = 0
+
+        # Check if the user exists
         user = self.get_user(user_id)
 
+        # Check if the user should be created
         if not user:
-            user = self.create_user(user_id)
-            self.create_economy(user_id)
+            if create:
+                user = self.create_user(user_id)
+                user.economy = self.create_economy(user_id)
 
         # Check if the user has an economy
-        if not user.economy:
-            self.create_economy(user_id)
+        if not user or not user.economy:
+            if create:
+                user.economy = self.create_economy(user_id)
         
-        return user
+        self.queries += 1
+        return user if user else None
+    
+    def handle_economy(self, user_id: int) -> Economy:
+        """
+        Handle economy for a user.
+
+        Args:
+        user_id (int): The ID of the user whose economy to handle.
+        
+        Returns:
+        Economy: The economy object.
+        """
+        # Check if > 5 queries have been made
+        if self.queries > 5:
+            self.start_session()
+            self.queries = 0
+
+        # Check if the economy exists
+        economy = self.get_economy(user_id)
+
+        if not economy:
+            economy = self.create_economy(user_id)
+            economy.user = self.create_user(user_id)
+        
+        self.queries += 1
+        return economy

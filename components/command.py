@@ -20,7 +20,7 @@ class Command:
     """
 
     help: Help = Help
-    permissions: ["send_messages", "read_messages"]
+    permissions: list[str] = ["send_messages", "read_messages"]
 
     dev = False
     hidden = False
@@ -53,9 +53,112 @@ class Command:
     def create_embed(self, **kwargs) -> discord.Embed:
         """
         Creates an embed with the given parameters.
+
+        Parameters:
+            title: str
+            description: str
+            colour: Colour
+            footer: dict { text: str, icon_url: str}
+            thumbnail: str
+            image: str
+            author: dict { name: str, url: str, icon_url: str}
+            fields: list[dict] { name: str, value: str, inline: bool}
         """
 
-        return discord.Embed(**kwargs)
+        # Create the embed
+        embed = discord.Embed()
+
+        # Set the title
+        if "title" in kwargs:
+            embed.title = kwargs["title"]
+
+        # Set the description
+        if "description" in kwargs:
+            embed.description = kwargs["description"]
+
+        # Set the colour
+        if "colour" in kwargs:
+            embed.colour = kwargs["colour"]
+
+        # Set the footer
+        if "footer" in kwargs:
+            embed.set_footer(**kwargs["footer"])
+
+        # Set the thumbnail
+        if "thumbnail" in kwargs:
+            embed.set_thumbnail(url=kwargs["thumbnail"])
+
+        # Set the image
+        if "image" in kwargs:
+            embed.set_image(url=kwargs["image"])
+
+        # Set the author
+        if "author" in kwargs:
+            embed.set_author(**kwargs["author"])
+
+        # Set the fields
+        if "fields" in kwargs:
+            for field in kwargs["fields"]:
+                embed.add_field(name=field[0], value=field[1], inline=field[2] if len(field) > 2 else False)
+
+        # Return the embed
+        return embed
+    
+    async def paginate(self, embeds: list[discord.Embed], timeout: int = 60):
+        """
+        Creates a pagination session.
+        """
+        # Send the first embed
+        message = await self.message.channel.send(embed=embeds[0])
+
+        # Add the reactions
+        await message.add_reaction("⬅️")
+        await message.add_reaction("➡️")
+
+        # Define the check
+        def check(reaction, user):
+            return user.id == self.message.author.id and str(reaction.emoji) in ["⬅️", "➡️"]
+        
+        # Define the variables
+        index = 0
+        running = True
+
+        # While the session is running
+        while running:
+            # Wait for a reaction
+            try:
+                reaction, user = await self.client.wait_for("reaction_add", timeout=timeout, check=check)
+            except:
+                # If the timeout is reached, stop the session
+                running = False
+                break
+
+            # If the reaction is left
+            if str(reaction.emoji) == "⬅️":
+                # If the index is 0, loop back to the end
+                if index == 0:
+                    index = len(embeds)-1
+                else:
+                    # Else, go back one
+                    index -= 1
+            # If the reaction is right
+            elif str(reaction.emoji) == "➡️":
+                # If the index is the end, loop back to the start
+                if index == len(embeds)-1:
+                    index = 0
+                else:
+                    # Else, go forward one
+                    index += 1
+
+            # Edit the message
+            await message.edit(embed=embeds[index])
+
+            # Remove the reaction
+            await message.remove_reaction(reaction, user)
+
+        # Remove the reactions
+        await message.clear_reactions()
+
     
     def send(self, content: str = None, embed: discord.Embed = None):
         """
