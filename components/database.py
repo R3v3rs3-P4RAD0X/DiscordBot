@@ -214,20 +214,3 @@ class Database:
             self.create_economy(user_id)
         
         return user
-
-
-if __name__ == "__main__":
-    db = Database()
-
-    # Get a user
-    user = db.handle_user(472571500637978626)
-
-    print(user)
-    print(user.economy)
-    print(user.economy.balance)
-
-    # Update the user's balance
-    db.update_economy(472571500637978626, balance=1000)
-
-    # Get the user's balance
-    print(user.economy.balance)
