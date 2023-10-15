@@ -30,8 +30,14 @@ class Create:
         Returns a formatted string of the imports.
         So it can be added to the file.
         """
-        # Check if there are any imports
-        if len(self.file_imports) == 0 or self.file_imports in ["", " ", "None"]:
+        # Check if the length of the imports is > 0
+        if len(self.file_imports) == 0:
+            # Return nothing
+            return ""
+        
+        # Check if the length of the imports is 1 and it's empty
+        if len(self.file_imports) == 1 and self.file_imports[0] == "":
+            # Return nothing
             return ""
         
         # Create the imports string
