@@ -1,15 +1,15 @@
-import time
 import os
-from watchdog.observers import Observer
-from watchdog.events import FileSystemEventHandler
+import time
+import psutil
 import subprocess
 import threading
-import psutil
-from typing import Union, List
+from watchdog.observers import Observer
+from watchdog.events import FileSystemEventHandler
+
 
 # CONSTANTS
 FILE_TO_LOAD: str = "main.py"
-SUPPORTED_SUBDIRECTORIES: List[str] = ["events", "components"]
+SUPPORTED_SUBDIRECTORIES: list[str] = ["events", "components"]
 
 class Watcher:
     # Define the directory to watch
@@ -31,11 +31,16 @@ class Watcher:
             self.observer.stop()
             print("Error")
 
+        except KeyboardInterrupt:
+            self.observer.stop()
+            os.system("clear")
+            print("Stopped")
+
         self.observer.join()
 
 class Handler(FileSystemEventHandler):
     @staticmethod
-    def on_any_event(event: Union[FileSystemEventHandler, List[str]]) -> None:
+    def on_any_event(event: FileSystemEventHandler | list[str]) -> None:
         # If the event is a directory, skip
         if event.is_directory:
             return None
