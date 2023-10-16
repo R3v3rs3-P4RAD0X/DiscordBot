@@ -2,11 +2,10 @@
 # Description: This file handle the timeouts and ratelimits of commnads on
 #              a user, command or guild based setup.
 # Author: StrangeParadox
-# Version: 0.0.1
+# Version: 0.0.2
 
 # Imports
 import datetime as dt
-import time
 
 class Ratelimit:
     """
@@ -19,17 +18,22 @@ class Ratelimit:
         Initialize the class.
         Set the variables.
         """
-        self.cache = {}
+        self.cache = {
+            "guilds": {},
+            "users": {},
+            "command": {}
+        }
 
-    def get_set(self, cache = None, key = None, default = {}) -> dict:
-        if cache == None:
-            cache = self.cache
+    def ensure(self, cache = None, key = None, default = {}) -> dict:
+        """
+        Gets an item from the cache, if it doesn't exist it will set it to the default value.
+        """
+        # Check if the key is in the cache
+        if key not in cache:
+            # Set the key to the default value
+            cache[key] = default
 
-        if key == None:
-            raise Exception("No key was given.")
-        
-        cache[key] = cache.get(key, default)
-
+        # Set the return data
         return cache[key]
 
     def check_command(self, command: object, ID: int, config: dict) -> bool:
@@ -48,103 +52,54 @@ class Ratelimit:
         # Destructurise the command
         name = command.__class__.__name__
 
-        # Determine the type of ratelimit
+        # Get the current time
+        now = dt.datetime.now()
+        
+        # Match each case for the ratelimit
         match ratelimit:
+
+            # If the ratelimit is guild
             case "guild":
-                # When rate limit is guild, it will be based on the guild id and for all commands in that guild
-                cache = self.get_set(self.cache, "guild")
-                cache = self.get_set(cache, ID, {
-                    "latest": [dt.datetime.now()]
-                })
+                print("Guild")
 
-                # Get the latest {limit} time and check the count of the command
-                latest = cache["latest"]
-
-                # Check if the latest is >= limit
-                latest = latest[0:min(limit, len(latest))]
-
-                # Count the amount of times the command has been used
-                count = len(latest)
-
-                # Check if the first element in latest is within the timeout
-                if (dt.datetime.now() - latest[0]).seconds <= timeout * 1000:
-                    # Check if the count is >= limit
-                    if count >= limit:
-                        return False, "You are being ratelimited."
-                    
-                    # Add the latest time to the cache
-                    latest.append(dt.datetime.now())
-                    self.cache["guild"][ID]["latest"].insert(0, dt.datetime.now())
-                    
-                    return True, "You are not being ratelimited."
-                
-                else:
-                    return False, "You are being ratelimited."
-
+            # If the ratelimit is user
             case "user":
-                # When the rate limit is user, it will be based on the user id
-                cache = self.get_set(self.cache, "user")
-                cache = self.get_set(cache, ID, {
-                    "latest": [dt.datetime.now()]
-                })
+                print("User")
 
-                # Get the latest {limit} time and check the count of the command
-                latest = cache["latest"]
+            # If the ratelimit is command
+            case "command":
+                # Get the cache or default to {}
+                cache = self.ensure(self.cache, ratelimit, { name: { ID: { "last": now, "amount": 0 } } })
+                cache = self.ensure(cache, name, { ID: { "last": now, "amount": 0 }})
+                cache = self.ensure(cache, ID, { "last": now, "amount": 0 })
 
-                # Check if the latest is >= limit
-                latest = latest[0:min(limit, len(latest))]
+                # Get the last time the command was run
+                last = cache['last']
 
-                # Count the amount of times the command has been used
-                count = len(latest)
+                # Get the amount of times it was ran
+                amount = cache['amount']
 
-                # Check if the first element in latest is within the timeout
-                if (dt.datetime.now() - latest[0]).seconds <= timeout * 1000:
-                    # Check if the count is >= limit
-                    if count >= limit:
-                        return False, "You are being ratelimited."
+                # Check if amount >= limit
+                if amount >= limit:
+                    # Check if the last + timeout > now
+                    if last + dt.timedelta(seconds=timeout) > now:
+                        # Return False
+                        return False
                     
-                    # Add the latest time to the cache
-                    latest.append(dt.datetime.now())
-                    self.cache["user"][ID]["latest"].insert(0, dt.datetime.now())
-                    
-                    return True, "You are not being ratelimited."
+                    # Reset the amount
+                    cache['amount'] = 0
+
+                # Update the cache
+                cache['last'] = now
+                cache['amount'] += 1
+
+                # Return True
+                return True 
                 
-                else:
-                    return False, "You are being ratelimited."
 
-            case "command" | _:
-                # When the rate limit is command, it will be based on the command name in a guild
-                cache = self.get_set(self.cache, "guild")
-                cache = self.get_set(cache, ID)
-                cache = self.get_set(cache, name, {
-                    "latest": [dt.datetime.now()]
-                })
-
-                # Get the latest {limit} time and check the count of the command
-                latest = cache["latest"]
-
-                # Check if the latest is >= limit
-                latest = latest[0:min(limit, len(latest))]
-
-                # Count the amount of times the command has been used
-                count = len(latest)
-
-                # Check if the first last element is within the timeout
-                if (dt.datetime.now() - latest[0]).seconds <= timeout * 1000:
-                    # Check if the count is >= limit
-                    if count >= limit:
-                        return False, "You are being ratelimited."
-                    
-                    # Add the latest time to the cache
-                    latest.append(dt.datetime.now())
-                    self.cache["guild"][ID][name]["latest"].insert(0, dt.datetime.now())
-                    
-                    return True, "You are not being ratelimited."
-                
-                else:
-                    return False, "You are being ratelimited."
-
-
+        # Return true if isn't timed out
+        return True
+        
 
 
 
