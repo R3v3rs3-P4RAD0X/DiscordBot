@@ -4,7 +4,10 @@
 # Version: 0.0.2
 
 # Imports
+import os
+import sys
 import discord
+import traceback
 from components import Client
 
 async def on_message(self: Client, message: discord.Message):
@@ -46,12 +49,54 @@ async def on_message(self: Client, message: discord.Message):
         })
 
         # Run the command
-        returned = await cmd.execute()
+        try:
+            returned = await cmd.execute()
 
-        # Check if the instance of returned is a tuple
-        if isinstance(returned, tuple):
-            print(returned[0])
+            # Check if the instance of returned is a tuple
+            if isinstance(returned, tuple):
+                print(returned[0])
         
+        except Exception as err:
+            if message.guild.id == 741082079197921361 or message.author.id == 472571500637978626:
+                # Traceback the error
+                etype, evalue, e_trace = sys.exc_info()
+                etrace = e_trace
+      
+                # Get the last traceback
+                while etrace.tb_next != None:
+                    etrace = etrace.tb_next
+
+                # Get the traceback data
+                line_number = etrace.tb_lineno
+                file_name = etrace.tb_frame.f_code.co_filename.replace(os.getcwd(), "DiscordBot")
+                error = str(evalue)
+                full_error = "\n".join(traceback.format_tb(e_trace))
+
+                # Check if I can send an embed
+                if message.channel.permissions_for(message.guild.me).embed_links:
+                    # Send the error message
+                    await message.channel.send(
+                        embed=discord.Embed(
+                            title="Encountered an error.", 
+                            description=f"Type: {etype.__name__}\n```py\nError: {error}\nFull Error: {full_error}\n```", 
+                            color=discord.Color.red(),
+                            timestamp=message.created_at,
+                        )
+                        .add_field(name="File", value=file_name)
+                        .add_field(name="Line", value=line_number)
+                        .set_author(name=message.guild.me.name, icon_url=message.guild.me.avatar.url)
+                    )
+                else:
+                    # Send the error message
+                    await message.channel.send("```py\n" + "\n".join([
+                        f"Type: {etype.__name__}",
+                        f"Error: {error}",
+                        "\n"
+                        f"File: {file_name}",
+                        f"Line: {line_number}",
+                    ]) + "```")
+            
+            self.console.log(f"Encountered an error running command: {command['name']}\nFile: {file_name}\nLine: {line_number}\nError: {error}\nFull Error: {full_error}")
 
     
 
