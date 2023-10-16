@@ -6,7 +6,7 @@ Written in python using the discord.py library, this bot includes a component ba
 - [❌] Music
 - [❌] Fun
 - [❌] Utility
-- [❌] Logging
+- [✔️] Logging
 - [✔️] Help
 - [❌] Economy
 - [✔️] Database
