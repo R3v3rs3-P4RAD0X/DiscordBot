@@ -3,7 +3,7 @@
 #              just extend this class and implement a way of running
 #              the command.
 # Author: StrangeParadox
-# Version: 0.0.2
+# Version: 0.0.4
 
 # Imports
 from components.help import Help
@@ -78,7 +78,27 @@ class Command:
 
         # Set the colour
         if "colour" in kwargs:
-            embed.colour = kwargs["colour"]
+            # Get the colour
+            colour = kwargs["colour"]
+            # Check what type of colour it is
+            if isinstance(colour, str):
+                # If it's a string, get the attribute from discord.Colour
+                colour = getattr(discord.Colour, colour)()
+
+            if isinstance(colour, (list, tuple)):
+                # If it's a list or tuple, create a discord.Colour from the list
+                colour = discord.Colour.from_rgb(*colour)
+
+            if isinstance(colour, int):
+                # If it's an int, create a discord.Colour from the int
+                colour = discord.Colour(colour)
+
+            if isinstance(colour, dict):
+                # Get the RGB values from the dict
+                colour = discord.Colour.from_rgb(**colour)
+
+            # Set the colour
+            embed.colour = colour
 
         # Set the footer
         if "footer" in kwargs:
@@ -101,6 +121,10 @@ class Command:
             for field in kwargs["fields"]:
                 embed.add_field(name=field[0], value=field[1], inline=field[2] if len(field) > 2 else False)
 
+        # Set the timestamp
+        if "timestamp" in kwargs:
+            embed.timestamp = kwargs["timestamp"]
+
         # Return the embed
         return embed
     
@@ -108,56 +132,97 @@ class Command:
         """
         Creates a pagination session.
         """
-        # Send the first embed
-        message = await self.message.channel.send(embed=embeds[0])
 
-        # Add the reactions
-        await message.add_reaction("⬅️")
-        await message.add_reaction("➡️")
+        current_page = 0
 
-        # Define the check
-        def check(reaction, user):
-            return user.id == self.message.author.id and str(reaction.emoji) in ["⬅️", "➡️"]
+        class Paginate(discord.ui.View):
+            def __init__(this, pages: list[str|discord.Embed]):
+                super().__init__()
+                this.pages = pages
+
+            def invert(this, type: bool = True) -> None:
+                """
+                Changes the colour of the buttons.
+                """
+                # Check if type was passed: True = next, False = prev | 0 = prev, 1 = next
+                if type:
+                    this.children[0].disabled = current_page <= 0
+                    this.children[0].style = discord.ButtonStyle.green if not this.children[0].disabled else discord.ButtonStyle.danger
+                    this.children[1].disabled = current_page == len(this.pages) - 1
+                    this.children[1].style = discord.ButtonStyle.danger if this.children[1].disabled else discord.ButtonStyle.green
+                else:
+                    this.children[0].disabled = current_page <= 0
+                    this.children[0].style = discord.ButtonStyle.green if not this.children[0].disabled else discord.ButtonStyle.danger
+                    this.children[1].disabled = current_page == len(this.pages) - 1
+                    this.children[1].style = discord.ButtonStyle.danger if this.children[1].disabled else discord.ButtonStyle.green
+            
+            @discord.ui.button(label='<<', disabled=True, custom_id='prev', style=discord.ButtonStyle.danger)
+            async def previous_page(this, interaction, _):
+                nonlocal current_page
+
+                # Check if the user is the author
+                if interaction.user.id != self.message.author.id:
+                    return
+                
+                # Check if current page < 0 if so, set current page to len(pages) - 1 else subtract 1
+                current_page = len(this.pages) - 1 if current_page - 1 < 0 else current_page - 1
+
+                # Call the invert method
+                this.invert(False)
+    
+                # Check if the list is a list of embeds or strings
+                if isinstance(this.pages[current_page], discord.Embed):
+                    await interaction.response.edit_message(embed=this.pages[current_page], view=this)
+                else:
+                    await interaction.response.edit_message(content=this.pages[current_page], view=this)
+
+            @discord.ui.button(label='>>', custom_id='next', style=discord.ButtonStyle.green)
+            async def next_page(this, interaction, _):
+                nonlocal current_page
+
+                # Check if the user is the author
+                if interaction.user.id != self.message.author.id:
+                    return
+
+                # Check if current page > len(pages) if so, set current page to 0 else add 1
+                current_page = 0 if current_page + 1 >= len(this.pages) else current_page + 1
+
+                # Call the invert method
+                this.invert(True)
+
+                # Check if the list is a list of embeds or strings
+                if isinstance(this.pages[current_page], discord.Embed):
+                    await interaction.response.edit_message(embed=this.pages[current_page], view=this)
+                else:
+                    await interaction.response.edit_message(content=this.pages[current_page], view=this)
+                
+            @discord.ui.button(label='Close', custom_id='close', style=discord.ButtonStyle.danger)
+            async def close(this, interaction: discord.Interaction, _):
+                nonlocal current_page
+
+                # Check if the user is the author
+                if interaction.user.id != self.message.author.id:
+                    return
+                
+                # Stop the listener
+                this.stop()
+
+                await interaction.response.edit_message(view=None, delete_after=1)
+                await self.message.delete(delay=1)
+
+        # Create the view
+        view = Paginate(embeds)
         
-        # Define the variables
-        index = 0
-        running = True
+        # Check if the list is a list of embeds or strings
+        if isinstance(embeds[current_page], discord.Embed):
+            # Check if the bot has the embed_links permission
+            if self.bot_permissions.has("embed_links"):
+                await self.message.channel.send(embed=embeds[current_page], view=view)
+            else:
+                await self.send("I don't have the embed_links permission.")
 
-        # While the session is running
-        while running:
-            # Wait for a reaction
-            try:
-                reaction, user = await self.client.wait_for("reaction_add", timeout=timeout, check=check)
-            except:
-                # If the timeout is reached, stop the session
-                running = False
-                break
-
-            # If the reaction is left
-            if str(reaction.emoji) == "⬅️":
-                # If the index is 0, loop back to the end
-                if index == 0:
-                    index = len(embeds)-1
-                else:
-                    # Else, go back one
-                    index -= 1
-            # If the reaction is right
-            elif str(reaction.emoji) == "➡️":
-                # If the index is the end, loop back to the start
-                if index == len(embeds)-1:
-                    index = 0
-                else:
-                    # Else, go forward one
-                    index += 1
-
-            # Edit the message
-            await message.edit(embed=embeds[index])
-
-            # Remove the reaction
-            await message.remove_reaction(reaction, user)
-
-        # Remove the reactions
-        await message.clear_reactions()
+        else:
+            await self.message.channel.send(content=embeds[current_page], view=view)
 
     
     def send(self, content: str = None, embed: discord.Embed = None):
@@ -172,7 +237,7 @@ class Command:
         Run method, if not overridden, will just send the help message.
         """
         
-        # Check if the bot has the embed_permissions
+        # Check if the bot doesn't have the embed_links permission
         if not self.bot_permissions.has("embed_links"):
             # Send the get_text() of the help message
             await self.send(content=self.help.get_text())
@@ -186,10 +251,10 @@ class Command:
         Makes sure all checks related to the command pass.
         """
         if self.disabled:
-            return False, "This command is disabled."
+            return True, "This command is disabled."
 
         # Check if the command is a developer command
-        if self.dev and self.message.author.id not in self.config["developers"]:
+        if self.dev and self.message.author.id != self.client.application.owner.id:
             return True, "This is a developer command."
         
         # Check if the command is NSFW
@@ -221,8 +286,8 @@ class Command:
             return True, "You don't have the required permissions to run this command."
         
         # Check if the command is ratelimited
-        if not self.config["ratelimiter"].check_command(self, self.message.author.id if self.ratelimit["ratelimit"] == "command" else self.message.guild.id, self.ratelimit):
-            return True, "You are ratelimited."
+        if not self.config['ratelimiter'].check_command(self, self.message.author.id, self.ratelimit):
+            return True, "You're being ratelimited."
 
         # Return False if all checks pass
         return False, None

@@ -7,3 +7,4 @@ from components.ratelimit import Ratelimit
 from components.handler import Handler
 from components.economy import Economy
 from components.database import Database
+from components.logger import Logger
