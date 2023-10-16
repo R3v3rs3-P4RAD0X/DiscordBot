@@ -57,35 +57,45 @@ class Logger:
         Log format: [YYYY/MM/DD HH:MM:SS] (filename:line) message
         """
         frame = inspect.currentframe().f_back
-        filename = frame.f_code.co_filename.replace(os.getcwd() + "/", "DiscordBot -> ")
+        filepath = frame.f_code.co_filename
+        filename = filepath.split("/")[-1]
         line = frame.f_lineno
+        
+        # Construct a filestr
+        filestr = f"{filename}:{line}"
+
+        # Get the console dimensions
+        dimensions = self.console.size
+
+        # Define the content to print
+        content = f"{self.now()} {message}"
+
+        spacing = dimensions.width - \
+            (len(self.now()) + \
+            len(filestr) + \
+            len(self.clean(message))) -1
 
         # Log the message using the rich console
-        self.console.log(message, **kwargs)
+        rich.print(f"{content}{' ' * spacing}{filestr}")
 
         # Open the log file
         with open(self.file, "a+") as file:
             # Check if message is empty
             if len(message) == 0:
-                file.write(f"{self.now()} ({filename}:{line})\n{self.now()} Empty print.\n\n")
+                file.write(f"{self.now()} ({filename}:{line}) Empty print.\n")
                 return
             
             # Get the word chunks
             chunks = self.to_chunks(message)
 
             if len(chunks) == 0:
-                file.write(f"{self.now()} ({filename}:{line})\nEmpty chunk.\n\n")
+                file.write(f"{self.now()} ({filename}:{line}) Empty chunk.\n")
                 return
-
-            # Write the filename and line number before the message
-            file.write(f"{self.now()} ({filename}:{line})\n")
 
             # Loop over the chunks
             for chunk in chunks:
                 # Write the chunk to the file
-                file.write(f"{self.now()} {self.clean(chunk)}\n")
-            
-            file.write(f"\n")
+                file.write(f"{self.now()} ({filestr}) {self.clean(chunk)}\n")
     
     def print(self, *args, **kwargs):
         """

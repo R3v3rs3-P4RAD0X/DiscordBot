@@ -39,7 +39,7 @@ class Main:
         os.system("clear" if os.name == "posix" else "cls")
 
         # Print the header
-        self.console.print("[bold]StrangeParadox's Discord Bot[/bold]", justify="center")
+        self.console.print("[bold]StrangeParadox's Discord Bot[/bold]")
 
 
         # Get the env file read and loaded
