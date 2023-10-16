@@ -72,6 +72,13 @@ class Database:
 
         self.start_session()
 
+    def __del__(self):
+        """
+        Handles the closing of the database.
+        """
+        self.session.commit()
+        self.session.close()
+
     def start_session(self):
         if self.session != None:
             self.session.commit()
