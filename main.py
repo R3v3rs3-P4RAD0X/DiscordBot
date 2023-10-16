@@ -2,13 +2,14 @@
 # Description: This is the heart of the project, this is where
 #              all the different features and brought into one.
 # Author: StrangeParadox
-# Version: 0.0.2
+# Version: 0.0.3
 
 # Imports
 import components
 import discord
 import os
 import rich
+import sys
 
 class Main:
     """
@@ -28,15 +29,18 @@ class Main:
         """
         Combine all the components into one and start the bot.
         """
-        self.console = rich.get_console()
+        # Create the components object
+        self.components = components
+
+        # Initialise the logger
+        self.console = self.components.Logger()
+
         # Clear the console
         os.system("clear" if os.name == "posix" else "cls")
 
         # Print the header
         self.console.print("[bold]StrangeParadox's Discord Bot[/bold]", justify="center")
 
-        # Create the components object
-        self.components = components
 
         # Get the env file read and loaded
         self.env = self.components.Util().read_key_val_file(".env")
@@ -105,6 +109,22 @@ class Main:
         # Run the bot
         self.client.run(TOKEN)
 
+        # Print the keyboard interrupt message
+        os.system("clear" if os.name == "posix" else "cls")
+        self.console.log("[red]Shutting down... will only take a second.[/red]")
+
+        # Delete all the attributes of main
+        del self.console
+        del self.components
+        del self.client
+        del self.env
+        del self.command_handler
+        del self.event_handler
+        del self.ratelimit
+        del self.database
+
+        # Exit the program
+        sys.exit(0)
 
 if __name__ == '__main__':
     Main().start()

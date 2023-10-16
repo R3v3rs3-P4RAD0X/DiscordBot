@@ -2,16 +2,15 @@
 # Description: This is the heart of the discord bot, this class
 #              is an extension of discord.Client
 # Author: StrangeParadox
-# Version: 0.0.3
+# Version: 0.0.4
 
 # Imports
 import discord
-import rich
 from components.handler import Handler
 from components.ratelimit import Ratelimit
 from components.database import Database, User, Economy
 from components.economy import Economy
-from components.command import Command
+from components.logger import Logger
 
 class Client(discord.Client):
     """
@@ -25,7 +24,7 @@ class Client(discord.Client):
         """
         super().__init__(*args, **kwargs)
 
-        self.console: rich.console.Console = kwargs.get("console")
+        self.console: Logger = kwargs.get("console")
         self.env: dict = {}
         self.command_handler: Handler = kwargs.get("command_handler")
         self.ratelimit: Ratelimit = kwargs.get("ratelimit")
