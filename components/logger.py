@@ -50,7 +50,7 @@ class Logger:
         return re.sub(self.pattern, "", line)
         
 
-    def log(self, message: str = "", **kwargs):
+    def log(self, message: str = "", level: str = "INFO", **kwargs):
         """
         Writes to the file along with printing the error.
 
@@ -61,6 +61,9 @@ class Logger:
         filename = filepath.split("/")[-1]
         line = frame.f_lineno
         
+        # Get the typestr
+        typestr = "[blue]INFO[/blue]" if level == "INFO" else "[red]ERROR[/red]" if level == "ERROR" else "[yellow]WARNING[/yellow]"
+
         # Construct a filestr
         filestr = f"{filename}:{line}"
 
@@ -68,12 +71,13 @@ class Logger:
         dimensions = self.console.size
 
         # Define the content to print
-        content = f"{self.now()} {message}"
+        content = f"{self.now()} {typestr} {message}"
 
         spacing = dimensions.width - \
             (len(self.now()) + \
             len(filestr) + \
-            len(self.clean(message))) -1
+            len(self.clean(message)) + \
+            len(self.clean(typestr))) -2
 
         # Log the message using the rich console
         rich.print(f"{content}{' ' * spacing}{filestr}")

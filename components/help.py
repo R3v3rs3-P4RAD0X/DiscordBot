@@ -27,6 +27,7 @@ class Help:
         self.description = description
         self.usage = "{}{}".format(command.client.env['PREFIX'], command.__class__.__name__.lower()) if usage == None else usage
         self.command = command
+        self.docstr = self.command.__doc__ or "No documentation provided."
 
 
     def get_embed(self) -> discord.Embed:
@@ -38,7 +39,7 @@ class Help:
         """
         embed = self.command.create_embed(
             title=self.command.__class__.__name__,
-            description=self.description,
+            description=f"{self.description}\n{self.docstr}",
             color=0x00ff00
         )
 

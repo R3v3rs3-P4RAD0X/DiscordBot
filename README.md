@@ -8,7 +8,7 @@ Written in python using the discord.py library, this bot includes a component ba
 - [❌] Utility
 - [✔️] Logging
 - [✔️] Help
-- [❌] Economy
+- [✔️] Economy
 - [✔️] Database
 
 ## Installation

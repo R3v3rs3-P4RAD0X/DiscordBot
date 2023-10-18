@@ -74,7 +74,7 @@ class Main:
             setattr(self.components.Client, event['name'], event['object'])
 
             # Print the event
-            self.console.log(f"Handler -> [green]Bind   [/green]: {event['name'].ljust(self.longest, ' ')} ([green]Loaded[/green])")
+            self.console.log(f"Handler -> [green]Event   [/green]: {event['name'].ljust(self.longest, ' ')} ([green]Loaded[/green])")
 
         self.console.log()
         self.event_handler.initialised = True
